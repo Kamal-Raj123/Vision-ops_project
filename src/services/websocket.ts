@@ -7,14 +7,13 @@ class WebSocketService {
   private reconnectDelay = 1000;
 
   connect(token?: string) {
-    const wsUrl = import.meta.env.VITE_WS_URL || 'https://localhost:3001';
-    
-    this.socket = io(wsUrl, {
+    // Connect to same origin, let Socket.IO infer the protocol
+    this.socket = io({
+      path: '/socket.io',
       transports: ['websocket', 'polling'],
       timeout: 20000,
       forceNew: true,
       withCredentials: false,
-      secure: true,
     });
 
     this.socket.on('connect', () => {
