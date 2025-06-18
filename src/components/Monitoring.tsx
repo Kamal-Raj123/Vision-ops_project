@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Activity,
   Server,
@@ -14,16 +14,13 @@ import {
   CheckCircle,
   Clock,
   Zap,
-  Globe,
-  RefreshCw
+  Globe
 } from 'lucide-react';
-import { useMetrics } from '../hooks/useApi';
+import { mockMetrics } from '../utils/mockData';
 
 export default function Monitoring() {
-  const { metrics, loading, refetch } = useMetrics();
   const [selectedTimeRange, setSelectedTimeRange] = useState('1h');
   const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
 
   const timeRanges = [
     { value: '5m', label: '5 minutes' },
@@ -32,17 +29,6 @@ export default function Monitoring() {
     { value: '24h', label: '24 hours' },
     { value: '7d', label: '7 days' }
   ];
-
-  const handleTimeRangeChange = async (range: string) => {
-    setSelectedTimeRange(range);
-    await refetch(range);
-  };
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await refetch(selectedTimeRange);
-    setTimeout(() => setRefreshing(false), 1000);
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -71,8 +57,6 @@ export default function Monitoring() {
   };
 
   const renderMiniChart = (data: any[]) => {
-    if (!data || data.length === 0) return null;
-    
     const maxValue = Math.max(...data.map(d => d.value));
     const points = data.map((point, index) => {
       const x = (index / (data.length - 1)) * 100;
@@ -99,25 +83,6 @@ export default function Monitoring() {
     { name: 'worker-3', status: 'healthy', cpu: '34%', memory: '58%', role: 'worker' }
   ];
 
-  if (loading) {
-    return (
-      <div className="p-8 space-y-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                <div className="h-8 bg-gray-200 rounded w-1/2 mb-2"></div>
-                <div className="h-12 bg-gray-200 rounded"></div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="p-8 space-y-6">
       <div className="flex justify-between items-center">
@@ -129,26 +94,22 @@ export default function Monitoring() {
           <select
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             value={selectedTimeRange}
-            onChange={(e) => handleTimeRangeChange(e.target.value)}
+            onChange={(e) => setSelectedTimeRange(e.target.value)}
           >
             {timeRanges.map(range => (
               <option key={range.value} value={range.value}>{range.label}</option>
             ))}
           </select>
-          <button 
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-          >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-            <span>Refresh</span>
+          <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+            <Activity className="w-4 h-4" />
+            <span>Live View</span>
           </button>
         </div>
       </div>
 
       {/* System Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {metrics.map((metric: any) => {
+        {mockMetrics.map((metric) => {
           const StatusIcon = getStatusIcon(metric.status);
           return (
             <div

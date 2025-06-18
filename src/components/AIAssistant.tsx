@@ -14,7 +14,6 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { ChatMessage } from '../types';
-import { useAI } from '../hooks/useApi';
 
 export default function AIAssistant() {
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -28,7 +27,6 @@ export default function AIAssistant() {
   
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const { sendMessage } = useAI();
 
   const quickActions = [
     {
@@ -71,26 +69,144 @@ export default function AIAssistant() {
     setInputMessage('');
     setIsTyping(true);
 
-    try {
-      const response = await sendMessage(content);
+    // Simulate AI response
+    setTimeout(() => {
       const assistantResponse: ChatMessage = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
-        content: response,
+        content: generateAIResponse(content),
         timestamp: new Date().toISOString()
       };
       setMessages(prev => [...prev, assistantResponse]);
-    } catch (error) {
-      const errorResponse: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        type: 'assistant',
-        content: 'I apologize, but I encountered an error processing your request. Please try again or contact support if the issue persists.',
-        timestamp: new Date().toISOString()
-      };
-      setMessages(prev => [...prev, errorResponse]);
-    } finally {
       setIsTyping(false);
+    }, 1500);
+  };
+
+  const generateAIResponse = (userInput: string): string => {
+    const lowerInput = userInput.toLowerCase();
+    
+    if (lowerInput.includes('security') || lowerInput.includes('vulnerability')) {
+      return `Based on your recent security scan results, I've identified several key areas for improvement:
+
+**Critical Issues (2):**
+- SQL Injection vulnerability in user authentication - Fix by updating express-validator to v6.14.2
+- Outdated cryptographic library - Upgrade crypto-js to v4.1.1
+
+**Recommendations:**
+1. Implement input validation middleware across all API endpoints
+2. Set up automated dependency scanning in your CI pipeline
+3. Enable CSP headers for additional protection
+
+**Next Steps:**
+- Run \`npm audit fix\` to auto-update vulnerable packages
+- Review and update your authentication middleware
+- Consider implementing rate limiting for API endpoints
+
+Would you like me to generate specific code examples for any of these fixes?`;
     }
+    
+    if (lowerInput.includes('performance') || lowerInput.includes('optimization')) {
+      return `I've analyzed your system metrics and identified several optimization opportunities:
+
+**Current Status:**
+- CPU usage averaging 67% (elevated)
+- Memory usage at 45% (healthy)
+- API response time: 245ms (acceptable but improvable)
+
+**Performance Bottlenecks:**
+1. High CPU usage on worker-2 node (89%)
+2. Database query times averaging 23ms
+3. Unoptimized container images increasing startup time
+
+**Recommendations:**
+1. **Immediate:** Scale worker-2 or redistribute workload
+2. **Short-term:** Implement database query caching
+3. **Long-term:** Optimize Docker images using multi-stage builds
+
+**Expected Impact:**
+- 30% reduction in response times
+- 25% decrease in resource usage
+- Improved user experience during peak loads
+
+Would you like detailed implementation steps for any of these optimizations?`;
+    }
+    
+    if (lowerInput.includes('log') || lowerInput.includes('error')) {
+      return `I've analyzed your recent application logs and found the following patterns:
+
+**Log Summary (Last 24 hours):**
+- Total log entries: 45,234
+- Error rate: 0.12% (54 errors)
+- Warning rate: 2.3% (1,040 warnings)
+
+**Key Findings:**
+1. **Database Connection Timeouts** (23 occurrences)
+   - Peak times: 2-4 PM and 8-10 PM
+   - Likely cause: Connection pool exhaustion
+
+2. **API Rate Limit Exceeded** (18 occurrences)
+   - Affected endpoint: /api/v1/data
+   - Suggests need for client-side throttling
+
+3. **Memory Leak Indicators** (3 warnings)
+   - Gradual memory increase in worker processes
+   - Recommend heap dump analysis
+
+**Suggested Actions:**
+- Increase database connection pool size
+- Implement API client retry logic with exponential backoff
+- Schedule memory profiling session
+
+Would you like me to create monitoring alerts for these specific patterns?`;
+    }
+    
+    if (lowerInput.includes('pipeline') || lowerInput.includes('ci/cd')) {
+      return `I've reviewed your CI/CD pipeline configuration and identified several optimization opportunities:
+
+**Current Pipeline Analysis:**
+- Average build time: 12 minutes
+- Success rate: 87% (good but improvable)
+- Most common failure: Test timeouts (34%)
+
+**Optimization Recommendations:**
+
+1. **Parallel Execution:**
+   - Run tests and security scans in parallel
+   - Estimated time savings: 4-6 minutes
+
+2. **Caching Strategy:**
+   - Implement Docker layer caching
+   - Cache npm/pip dependencies
+   - Expected improvement: 40% faster builds
+
+3. **Test Optimization:**
+   - Split integration tests into smaller chunks
+   - Add timeout configuration for flaky tests
+   - Run unit tests before integration tests
+
+4. **Resource Allocation:**
+   - Increase memory for test runners
+   - Use faster build agents for critical branches
+
+**Implementation Priority:**
+1. Enable dependency caching (Quick win)
+2. Parallelize pipeline stages
+3. Optimize test execution
+
+Would you like me to generate the updated pipeline configuration YAML?`;
+    }
+    
+    return `I understand you'd like help with: "${userInput}"
+
+I can assist you with various DevSecOps tasks including:
+
+• **Security Analysis** - Vulnerability assessment and remediation
+• **Performance Monitoring** - System optimization and bottleneck identification  
+• **Log Analysis** - Error pattern detection and root cause analysis
+• **Pipeline Optimization** - CI/CD improvement recommendations
+• **Infrastructure Insights** - Resource usage and scaling recommendations
+
+Could you please provide more specific details about what you'd like me to analyze or help you with?`;
   };
 
   const handleQuickAction = (prompt: string) => {
