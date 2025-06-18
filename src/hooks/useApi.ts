@@ -9,7 +9,6 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // 10 second timeout
 });
 
 // Add auth token to requests
@@ -25,7 +24,6 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('API Error:', error);
     if (error.response?.status === 401) {
       localStorage.removeItem('authToken');
       localStorage.removeItem('userData');
@@ -61,7 +59,7 @@ export const useAuth = () => {
 
   const login = async (email: string, password: string) => {
     try {
-      console.log('Attempting login with:', { email, password: '***' });
+      console.log('Attempting login with:', { email, password });
       const response = await api.post('/auth/login', { email, password });
       console.log('Login response:', response.data);
       
@@ -77,16 +75,7 @@ export const useAuth = () => {
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      let errorMessage = 'Login failed';
-      
-      if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK') {
-        errorMessage = 'Cannot connect to server. Please ensure the backend is running on port 3001.';
-      } else if (error.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
+      const errorMessage = error.response?.data?.error || error.message || 'Login failed';
       return { success: false, error: errorMessage };
     }
   };
@@ -110,9 +99,7 @@ export const useDashboard = () => {
       try {
         const response = await api.get('/dashboard');
         setData(response.data);
-        setError(null);
       } catch (err: any) {
-        console.error('Dashboard fetch error:', err);
         setError(err.message);
       } finally {
         setLoading(false);

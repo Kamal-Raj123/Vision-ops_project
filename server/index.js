@@ -20,37 +20,23 @@ const server = createServer(app);
 const io = new Server(server, {
   cors: {
     origin: "http://localhost:5173",
-    methods: ["GET", "POST"],
-    credentials: true
+    methods: ["GET", "POST"]
   }
 });
 
 // Middleware
-app.use(helmet({
-  crossOriginEmbedderPolicy: false,
-  contentSecurityPolicy: false
-}));
+app.use(helmet());
 app.use(cors({
   origin: "http://localhost:5173",
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  credentials: true
 }));
 app.use(express.json());
-
-// Add request logging
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-  next();
-});
 
 // Database setup
 const db = new sqlite3.Database(':memory:');
 
 // Initialize database
 db.serialize(() => {
-  console.log('Initializing database...');
-  
   // Users table
   db.run(`CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -98,7 +84,6 @@ db.serialize(() => {
   )`);
 
   // Insert sample data
-  console.log('Inserting sample users...');
   const sampleUsers = [
     ['Kamalraj', 'techey.kamal@gmail.com', bcrypt.hashSync('admin123', 10), 'admin'],
     ['Karthick', 'karthick@example.com', bcrypt.hashSync('dev123', 10), 'devops'],
@@ -107,15 +92,10 @@ db.serialize(() => {
   ];
 
   const userStmt = db.prepare("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)");
-  sampleUsers.forEach(user => {
-    userStmt.run(user, (err) => {
-      if (err) console.error('Error inserting user:', err);
-    });
-  });
+  sampleUsers.forEach(user => userStmt.run(user));
   userStmt.finalize();
 
   // Sample pipelines
-  console.log('Inserting sample pipelines...');
   const samplePipelines = [
     ['Frontend Deploy', 'secureops/frontend', 'main', 'success', '{"stages": ["build", "test", "deploy"]}', new Date().toISOString(), 204],
     ['Backend API', 'secureops/api', 'develop', 'running', '{"stages": ["build", "test", "security-scan", "deploy"]}', new Date().toISOString(), 105],
@@ -124,15 +104,10 @@ db.serialize(() => {
   ];
 
   const pipelineStmt = db.prepare("INSERT INTO pipelines (name, repository, branch, status, config, last_run, duration) VALUES (?, ?, ?, ?, ?, ?, ?)");
-  samplePipelines.forEach(pipeline => {
-    pipelineStmt.run(pipeline, (err) => {
-      if (err) console.error('Error inserting pipeline:', err);
-    });
-  });
+  samplePipelines.forEach(pipeline => pipelineStmt.run(pipeline));
   pipelineStmt.finalize();
 
   // Sample vulnerabilities
-  console.log('Inserting sample vulnerabilities...');
   const sampleVulns = [
     ['critical', 'SQL Injection vulnerability in user authentication', 'Improper input validation allows SQL injection attacks', 'express-validator', '6.10.0', '6.14.2', 'owasp', 'open'],
     ['high', 'Outdated cryptographic library', 'Using deprecated cryptographic functions', 'crypto-js', '3.1.2', '4.1.1', 'trivy', 'open'],
@@ -141,11 +116,7 @@ db.serialize(() => {
   ];
 
   const vulnStmt = db.prepare("INSERT INTO vulnerabilities (severity, title, description, package, version, fixed_version, scanner, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-  sampleVulns.forEach(vuln => {
-    vulnStmt.run(vuln, (err) => {
-      if (err) console.error('Error inserting vulnerability:', err);
-    });
-  });
+  sampleVulns.forEach(vuln => vulnStmt.run(vuln));
   vulnStmt.finalize();
 
   console.log('Database initialized with sample data');
@@ -159,7 +130,6 @@ try {
   const kc = new KubeConfig();
   kc.loadFromDefault();
   k8sApi = kc.makeApiClient(CoreV1Api);
-  console.log('Kubernetes client initialized');
 } catch (error) {
   console.log('Kubernetes client not available:', error.message);
 }
@@ -177,21 +147,13 @@ const authenticateToken = (req, res, next) => {
   }
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) {
-      console.error('JWT verification error:', err);
-      return res.status(403).json({ error: 'Invalid or expired token' });
-    }
+    if (err) return res.status(403).json({ error: 'Invalid or expired token' });
     req.user = user;
     next();
   });
 };
 
 // Routes
-
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
-});
 
 // Authentication
 app.post('/api/auth/login', (req, res) => {
@@ -479,12 +441,6 @@ app.get('/api/system/status', authenticateToken, (req, res) => {
   res.json(status);
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Server error:', err);
-  res.status(500).json({ error: 'Internal server error' });
-});
-
 // WebSocket connections
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
@@ -516,9 +472,8 @@ cron.schedule('*/5 * * * *', () => {
 });
 
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, () => {
   console.log(`🚀 SecureOps DevSecOps Platform running on port ${PORT}`);
   console.log(`📊 Dashboard: http://localhost:5173`);
   console.log(`🔧 API: http://localhost:${PORT}/api`);
-  console.log(`🏥 Health Check: http://localhost:${PORT}/api/health`);
 });
