@@ -58,8 +58,6 @@ const limiter = rateLimit({
 });
 
 app.use(limiter);
-app.use(compression());
-app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) } }));
 
 // CORS configuration
 app.use(cors({
@@ -69,6 +67,10 @@ app.use(cors({
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Apply compression and morgan after body parsers to avoid WebSocket interference
+app.use(compression());
+app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) } }));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
