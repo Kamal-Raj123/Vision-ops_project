@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "server": "node server/index.js",
-    "dev:full": "concurrently \"npm run server\" \"wait-on ws://localhost:3001 && npm run dev\""
+    "dev:full": "concurrently \"npm run server\" \"wait-on http://localhost:3001 && npm run dev\""
   },
   "dependencies": {
     "axios": "^1.6.0",
