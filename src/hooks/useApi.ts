@@ -26,8 +26,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('authToken');
-      localStorage.removeItem('userData');
-      // Don't redirect automatically, let the component handle it
+      window.location.href = '/login';
     }
     return Promise.reject(error);
   }
@@ -46,37 +45,23 @@ export const useAuth = () => {
     const userData = localStorage.getItem('userData');
     
     if (token && userData) {
-      try {
-        setUser(JSON.parse(userData));
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userData');
-      }
+      setUser(JSON.parse(userData));
     }
     setLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
     try {
-      console.log('Attempting login with:', { email, password });
       const response = await api.post('/auth/login', { email, password });
-      console.log('Login response:', response.data);
-      
       const { token, user } = response.data;
       
-      if (token && user) {
-        localStorage.setItem('authToken', token);
-        localStorage.setItem('userData', JSON.stringify(user));
-        setUser(user);
-        return { success: true };
-      } else {
-        return { success: false, error: 'Invalid response from server' };
-      }
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('userData', JSON.stringify(user));
+      setUser(user);
+      
+      return { success: true };
     } catch (error: any) {
-      console.error('Login error:', error);
-      const errorMessage = error.response?.data?.error || error.message || 'Login failed';
-      return { success: false, error: errorMessage };
+      return { success: false, error: error.response?.data?.error || 'Login failed' };
     }
   };
 

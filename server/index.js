@@ -26,10 +26,7 @@ const io = new Server(server, {
 
 // Middleware
 app.use(helmet());
-app.use(cors({
-  origin: "http://localhost:5173",
-  credentials: true
-}));
+app.use(cors());
 app.use(express.json());
 
 // Database setup
@@ -118,8 +115,6 @@ db.serialize(() => {
   const vulnStmt = db.prepare("INSERT INTO vulnerabilities (severity, title, description, package, version, fixed_version, scanner, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
   sampleVulns.forEach(vuln => vulnStmt.run(vuln));
   vulnStmt.finalize();
-
-  console.log('Database initialized with sample data');
 });
 
 // Docker and Kubernetes clients
@@ -143,11 +138,11 @@ const authenticateToken = (req, res, next) => {
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
-    return res.status(401).json({ error: 'Access token required' });
+    return res.sendStatus(401);
   }
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ error: 'Invalid or expired token' });
+    if (err) return res.sendStatus(403);
     req.user = user;
     next();
   });
@@ -159,24 +154,9 @@ const authenticateToken = (req, res, next) => {
 app.post('/api/auth/login', (req, res) => {
   const { email, password } = req.body;
   
-  console.log('Login attempt:', { email, password: '***' });
-  
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password are required' });
-  }
-  
   db.get("SELECT * FROM users WHERE email = ?", [email], (err, user) => {
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-    
-    if (!user) {
-      console.log('User not found:', email);
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-    
-    console.log('User found:', { id: user.id, email: user.email, role: user.role });
+    if (err) return res.status(500).json({ error: 'Database error' });
+    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
     
     if (bcrypt.compareSync(password, user.password)) {
       const token = jwt.sign(
@@ -184,19 +164,8 @@ app.post('/api/auth/login', (req, res) => {
         JWT_SECRET,
         { expiresIn: '24h' }
       );
-      
-      console.log('Login successful for:', user.email);
-      res.json({ 
-        token, 
-        user: { 
-          id: user.id, 
-          name: user.name, 
-          email: user.email, 
-          role: user.role 
-        } 
-      });
+      res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
     } else {
-      console.log('Password mismatch for:', email);
       res.status(401).json({ error: 'Invalid credentials' });
     }
   });
