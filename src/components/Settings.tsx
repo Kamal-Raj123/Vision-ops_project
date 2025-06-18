@@ -20,9 +20,12 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
-  Zap
+  Zap,
+  LogOut,
+  User
 } from 'lucide-react';
 import { MockBackendService } from '../services/mockBackend';
+import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 
 export default function Settings() {
@@ -30,6 +33,7 @@ export default function Settings() {
   const [integrations, setIntegrations] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [testingIntegration, setTestingIntegration] = useState<string | null>(null);
+  const { user, logout } = useAuthStore();
   
   const [settings, setSettings] = useState({
     notifications: {
@@ -100,11 +104,17 @@ export default function Settings() {
     }
   };
 
+  const handleSignOut = () => {
+    logout();
+    toast.success('Successfully signed out');
+  };
+
   const tabs = [
     { id: 'integrations', label: 'Integrations', icon: GitBranch },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'security', label: 'Security', icon: Shield },
     { id: 'users', label: 'Users & Teams', icon: Users },
+    { id: 'account', label: 'Account', icon: User },
     { id: 'system', label: 'System', icon: SettingsIcon }
   ];
 
@@ -156,7 +166,7 @@ export default function Settings() {
   const renderIntegrationsTab = () => (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Service Integrations</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Service Integrations</h2>
         <p className="text-gray-600">Connect and manage external services for your DevSecOps pipeline</p>
       </div>
 
@@ -171,10 +181,10 @@ export default function Settings() {
             const isConnected = integration.status === 'connected';
             
             return (
-              <div key={integration.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div key={integration.id} className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-all duration-300">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-start space-x-4">
-                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
                       isConnected ? 'bg-emerald-100' : 'bg-gray-100'
                     }`}>
                       <Icon className={`w-6 h-6 ${isConnected ? 'text-emerald-600' : 'text-gray-600'}`} />
@@ -194,7 +204,7 @@ export default function Settings() {
 
                 {/* Integration Metrics */}
                 {integration.metrics && isConnected && (
-                  <div className="grid grid-cols-3 gap-4 mb-4 p-3 bg-gray-50 rounded-lg">
+                  <div className="grid grid-cols-3 gap-4 mb-4 p-3 bg-gray-50 rounded-xl">
                     <div className="text-center">
                       <p className="text-sm font-medium text-gray-900">{integration.metrics.uptime}</p>
                       <p className="text-xs text-gray-500">Uptime</p>
@@ -224,7 +234,7 @@ export default function Settings() {
                   <button
                     onClick={() => testIntegration(integration.id)}
                     disabled={testingIntegration === integration.id}
-                    className="flex-1 px-3 py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
+                    className="flex-1 px-3 py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
                   >
                     {testingIntegration === integration.id ? (
                       <>
@@ -241,7 +251,7 @@ export default function Settings() {
                   
                   <button
                     onClick={() => toggleIntegration(integration.id, integration.status)}
-                    className={`flex-1 px-3 py-2 rounded-lg font-medium transition-colors ${
+                    className={`flex-1 px-3 py-2 rounded-xl font-medium transition-colors ${
                       isConnected
                         ? 'bg-red-100 text-red-700 hover:bg-red-200'
                         : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
@@ -277,14 +287,103 @@ export default function Settings() {
     </div>
   );
 
+  const renderAccountTab = () => (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Account Settings</h2>
+        <p className="text-gray-600">Manage your account preferences and security settings</p>
+      </div>
+
+      {/* User Profile */}
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Profile Information</h3>
+        <div className="flex items-center space-x-6 mb-6">
+          <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+            <User className="w-10 h-10 text-white" />
+          </div>
+          <div>
+            <h4 className="text-xl font-bold text-gray-900">{user?.name}</h4>
+            <p className="text-gray-600">{user?.email}</p>
+            <p className="text-sm text-blue-600 capitalize font-medium">{user?.role} Account</p>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+            <input
+              type="text"
+              value={user?.name || ''}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              readOnly
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+            <input
+              type="email"
+              value={user?.email || ''}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              readOnly
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Account Actions */}
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Actions</h3>
+        <div className="space-y-4">
+          <button className="w-full flex items-center justify-between p-4 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors">
+            <div className="flex items-center space-x-3">
+              <Key className="w-5 h-5 text-blue-600" />
+              <div className="text-left">
+                <p className="font-medium text-gray-900">Change Password</p>
+                <p className="text-sm text-gray-600">Update your account password</p>
+              </div>
+            </div>
+            <span className="text-blue-600">→</span>
+          </button>
+
+          <button className="w-full flex items-center justify-between p-4 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition-colors">
+            <div className="flex items-center space-x-3">
+              <Shield className="w-5 h-5 text-emerald-600" />
+              <div className="text-left">
+                <p className="font-medium text-gray-900">Two-Factor Authentication</p>
+                <p className="text-sm text-gray-600">Add an extra layer of security</p>
+              </div>
+            </div>
+            <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs font-medium rounded-full">
+              Enabled
+            </span>
+          </button>
+
+          <button 
+            onClick={handleSignOut}
+            className="w-full flex items-center justify-between p-4 bg-red-50 hover:bg-red-100 rounded-xl transition-colors group"
+          >
+            <div className="flex items-center space-x-3">
+              <LogOut className="w-5 h-5 text-red-600 group-hover:rotate-12 transition-transform" />
+              <div className="text-left">
+                <p className="font-medium text-gray-900">Sign Out</p>
+                <p className="text-sm text-gray-600">Sign out of your account</p>
+              </div>
+            </div>
+            <span className="text-red-600">→</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderNotificationsTab = () => (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Notification Preferences</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Notification Preferences</h2>
         <p className="text-gray-600">Configure how and when you receive alerts and notifications</p>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Notification Channels</h3>
         <div className="space-y-4">
           {[
@@ -292,7 +391,7 @@ export default function Settings() {
             { key: 'slack', label: 'Slack Integration', icon: Mail, description: 'Send alerts to Slack channels' },
             { key: 'webhook', label: 'Webhook Alerts', icon: Globe, description: 'Send notifications to custom endpoints' }
           ].map((channel) => (
-            <div key={channel.key} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div key={channel.key} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
               <div className="flex items-center space-x-3">
                 <channel.icon className="w-5 h-5 text-gray-600" />
                 <div>
@@ -319,53 +418,20 @@ export default function Settings() {
           ))}
         </div>
       </div>
-
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Alert Types</h3>
-        <div className="space-y-4">
-          {[
-            { key: 'critical', label: 'Critical Alerts', description: 'System failures and security breaches' },
-            { key: 'deployment', label: 'Deployment Status', description: 'Pipeline completion and failures' },
-            { key: 'security', label: 'Security Alerts', description: 'Vulnerability scans and security issues' }
-          ].map((alertType) => (
-            <div key={alertType.key} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div>
-                <p className="font-medium text-gray-900">{alertType.label}</p>
-                <p className="text-sm text-gray-600">{alertType.description}</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={settings.notifications[alertType.key as keyof typeof settings.notifications]}
-                  onChange={(e) => setSettings(prev => ({
-                    ...prev,
-                    notifications: {
-                      ...prev.notifications,
-                      [alertType.key]: e.target.checked
-                    }
-                  }))}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-              </label>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 
   const renderSecurityTab = () => (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Security Settings</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Security Settings</h2>
         <p className="text-gray-600">Manage authentication, authorization, and security policies</p>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Authentication</h3>
         <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
             <div className="flex items-center space-x-3">
               <Key className="w-5 h-5 text-gray-600" />
               <div>
@@ -386,70 +452,6 @@ export default function Settings() {
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
-
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div className="flex items-center space-x-3">
-              <Globe className="w-5 h-5 text-gray-600" />
-              <div>
-                <p className="font-medium text-gray-900">API Access Control</p>
-                <p className="text-sm text-gray-600">Manage API keys and access permissions</p>
-              </div>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings.security.apiAccess}
-                onChange={(e) => setSettings(prev => ({
-                  ...prev,
-                  security: { ...prev.security, apiAccess: e.target.checked }
-                }))}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Session Management</h3>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Session Timeout (hours)
-            </label>
-            <select
-              value={settings.security.sessionTimeout}
-              onChange={(e) => setSettings(prev => ({
-                ...prev,
-                security: { ...prev.security, sessionTimeout: e.target.value }
-              }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="1">1 hour</option>
-              <option value="8">8 hours</option>
-              <option value="24">24 hours</option>
-              <option value="168">1 week</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Password Policy
-            </label>
-            <select
-              value={settings.security.passwordPolicy}
-              onChange={(e) => setSettings(prev => ({
-                ...prev,
-                security: { ...prev.security, passwordPolicy: e.target.value }
-              }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="basic">Basic (8+ characters)</option>
-              <option value="strong">Strong (12+ chars, mixed case, numbers, symbols)</option>
-              <option value="enterprise">Enterprise (16+ chars, complexity requirements)</option>
-            </select>
-          </div>
         </div>
       </div>
     </div>
@@ -459,16 +461,16 @@ export default function Settings() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Users & Teams</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Users & Teams</h2>
           <p className="text-gray-600">Manage user access and team permissions</p>
         </div>
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl flex items-center space-x-2 transition-colors">
           <Users className="w-4 h-4" />
           <span>Invite User</span>
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100">
         <div className="p-6 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">Team Members</h3>
         </div>
@@ -481,8 +483,8 @@ export default function Settings() {
           ].map((user, index) => (
             <div key={index} className="p-6 flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                  <span className="text-sm font-semibold text-gray-600">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                  <span className="text-sm font-semibold text-white">
                     {user.name.split(' ').map(n => n[0]).join('')}
                   </span>
                 </div>
@@ -502,9 +504,6 @@ export default function Settings() {
                 }`}>
                   {user.status}
                 </span>
-                <button className="text-gray-400 hover:text-gray-600">
-                  <SettingsIcon className="w-4 h-4" />
-                </button>
               </div>
             </div>
           ))}
@@ -516,12 +515,12 @@ export default function Settings() {
   const renderSystemTab = () => (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">System Configuration</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">System Configuration</h2>
         <p className="text-gray-600">General system settings and maintenance</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">System Status</h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -546,10 +545,10 @@ export default function Settings() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Maintenance</h3>
           <div className="space-y-3">
-            <button className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+            <button className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors">
               <div className="flex items-center space-x-3">
                 <RefreshCw className="w-5 h-5 text-gray-600" />
                 <span className="font-medium">System Update</span>
@@ -557,20 +556,12 @@ export default function Settings() {
               <span className="text-sm text-gray-600">Check for updates</span>
             </button>
             
-            <button className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+            <button className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors">
               <div className="flex items-center space-x-3">
                 <Database className="w-5 h-5 text-gray-600" />
                 <span className="font-medium">Backup Now</span>
               </div>
               <span className="text-sm text-gray-600">Create manual backup</span>
-            </button>
-            
-            <button className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
-              <div className="flex items-center space-x-3">
-                <TestTube className="w-5 h-5 text-gray-600" />
-                <span className="font-medium">Health Check</span>
-              </div>
-              <span className="text-sm text-gray-600">Run system diagnostics</span>
             </button>
           </div>
         </div>
@@ -588,6 +579,8 @@ export default function Settings() {
         return renderSecurityTab();
       case 'users':
         return renderUsersTab();
+      case 'account':
+        return renderAccountTab();
       case 'system':
         return renderSystemTab();
       default:
@@ -600,36 +593,36 @@ export default function Settings() {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-8 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
-          <p className="text-gray-600">Configure your DevSecOps platform preferences and integrations</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Settings</h1>
+          <p className="text-gray-600 text-lg">Configure your DevSecOps platform preferences and integrations</p>
         </div>
         <button 
           onClick={saveSettings}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl flex items-center space-x-2 transition-colors shadow-lg"
         >
-          <Save className="w-4 h-4" />
+          <Save className="w-5 h-5" />
           <span>Save Changes</span>
         </button>
       </div>
 
       <div className="flex space-x-8">
-        {/* Tabs */}
-        <div className="w-64">
+        {/* Enhanced Tabs */}
+        <div className="w-72">
           <nav className="space-y-2">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                   activeTab === tab.id
-                    ? 'bg-blue-100 text-blue-700 font-medium'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    ? 'bg-white text-blue-700 font-medium shadow-lg border border-blue-200'
+                    : 'text-gray-600 hover:bg-white hover:shadow-md'
                 }`}
               >
-                <tab.icon className="w-5 h-5" />
+                <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-blue-600' : ''}`} />
                 <span>{tab.label}</span>
               </button>
             ))}

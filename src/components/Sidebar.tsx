@@ -46,15 +46,15 @@ export default function Sidebar({ activeView, onViewChange }: SidebarProps) {
   };
 
   return (
-    <div className="w-64 bg-gray-900 text-white flex flex-col h-full">
-      <div className="p-6 border-b border-gray-800">
+    <div className="w-64 bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800 text-white flex flex-col h-full shadow-2xl">
+      <div className="p-6 border-b border-gray-700">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <Zap className="w-5 h-5 text-white" />
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+            <Zap className="w-6 h-6 text-white" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-white">VisionOps</h1>
-            <p className="text-sm text-gray-400">DevSecOps Platform</p>
+            <p className="text-sm text-blue-300">DevSecOps Platform</p>
           </div>
         </div>
       </div>
@@ -67,13 +67,13 @@ export default function Sidebar({ activeView, onViewChange }: SidebarProps) {
               <li key={item.id}>
                 <button
                   onClick={() => onViewChange(item.id)}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
                     activeView === item.id
-                      ? 'bg-blue-600 text-white shadow-lg'
-                      : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                      ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg transform scale-105'
+                      : 'text-gray-300 hover:bg-gray-800 hover:text-white hover:transform hover:scale-105'
                   }`}
                 >
-                  <Icon className="w-5 h-5" />
+                  <Icon className={`w-5 h-5 ${activeView === item.id ? 'text-white' : 'group-hover:text-blue-400'}`} />
                   <span className="font-medium">{item.label}</span>
                 </button>
               </li>
@@ -82,24 +82,24 @@ export default function Sidebar({ activeView, onViewChange }: SidebarProps) {
         </ul>
       </nav>
       
-      <div className="p-4 border-t border-gray-800 space-y-3">
+      <div className="p-4 border-t border-gray-700 space-y-3">
         {/* User Profile */}
-        <div className="flex items-center space-x-3 p-3 bg-gray-800 rounded-lg">
-          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-            <User className="w-4 h-4 text-white" />
+        <div className="flex items-center space-x-3 p-3 bg-gray-800 rounded-xl border border-gray-700">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+            <User className="w-5 h-5 text-white" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-white truncate">{user?.name || 'User'}</p>
-            <p className="text-xs text-gray-400 truncate">{user?.role || 'Member'}</p>
+            <p className="text-xs text-blue-300 truncate capitalize">{user?.role || 'Member'}</p>
           </div>
         </div>
 
         {/* Sign Out Button */}
         <button
           onClick={handleSignOut}
-          className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-red-600 hover:text-white rounded-lg transition-all duration-200 group"
+          className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-red-600 hover:text-white rounded-xl transition-all duration-200 group"
         >
-          <LogOut className="w-5 h-5" />
+          <LogOut className="w-5 h-5 group-hover:rotate-12 transition-transform" />
           <span className="font-medium">Sign Out</span>
         </button>
       </div>
