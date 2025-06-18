@@ -7,12 +7,14 @@ class WebSocketService {
   private reconnectDelay = 1000;
 
   connect(token?: string) {
-    const wsUrl = import.meta.env.VITE_WS_URL || 'http://localhost:3001';
+    const wsUrl = import.meta.env.VITE_WS_URL || 'https://localhost:3001';
     
     this.socket = io(wsUrl, {
       transports: ['websocket', 'polling'],
       timeout: 20000,
       forceNew: true,
+      withCredentials: false,
+      secure: true,
     });
 
     this.socket.on('connect', () => {
