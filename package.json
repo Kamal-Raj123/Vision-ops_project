@@ -49,6 +49,6 @@
     "sqlite3": "^5.1.6",
     "node-cron": "^3.0.3",
     "dockerode": "^4.0.0",
-    "@kubernetes/client-node": "^0.20.0"
+    "kubernetes-client": "^10.0.0"
   }
 }

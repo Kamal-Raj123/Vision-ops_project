@@ -8,7 +8,7 @@ import bcrypt from 'bcryptjs';
 import sqlite3 from 'sqlite3';
 import cron from 'node-cron';
 import Docker from 'dockerode';
-import { KubeConfig, CoreV1Api } from '@kubernetes/client-node';
+import { Client } from 'kubernetes-client';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -119,12 +119,10 @@ db.serialize(() => {
 
 // Docker and Kubernetes clients
 const docker = new Docker();
-let k8sApi;
+let k8sClient;
 
 try {
-  const kc = new KubeConfig();
-  kc.loadFromDefault();
-  k8sApi = kc.makeApiClient(CoreV1Api);
+  k8sClient = new Client({ version: '1.13' });
 } catch (error) {
   console.log('Kubernetes client not available:', error.message);
 }
@@ -398,7 +396,7 @@ app.get('/api/system/status', authenticateToken, (req, res) => {
     services: {
       database: 'healthy',
       docker: 'healthy',
-      kubernetes: k8sApi ? 'healthy' : 'unavailable'
+      kubernetes: k8sClient ? 'healthy' : 'unavailable'
     },
     resources: {
       cpu: Math.floor(Math.random() * 100),
