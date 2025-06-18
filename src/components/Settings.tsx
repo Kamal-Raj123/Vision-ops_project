@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Settings as SettingsIcon,
   GitBranch,
@@ -15,11 +15,22 @@ import {
   TestTube,
   RefreshCw,
   Check,
-  X
+  X,
+  Activity,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  Zap
 } from 'lucide-react';
+import { MockBackendService } from '../services/mockBackend';
+import toast from 'react-hot-toast';
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState('integrations');
+  const [integrations, setIntegrations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [testingIntegration, setTestingIntegration] = useState<string | null>(null);
+  
   const [settings, setSettings] = useState({
     notifications: {
       email: true,
@@ -28,14 +39,6 @@ export default function Settings() {
       critical: true,
       deployment: true,
       security: true
-    },
-    integrations: {
-      github: { connected: true, status: 'active' },
-      jenkins: { connected: true, status: 'active' },
-      docker: { connected: true, status: 'active' },
-      kubernetes: { connected: false, status: 'pending' },
-      slack: { connected: false, status: 'disconnected' },
-      prometheus: { connected: true, status: 'active' }
     },
     security: {
       twoFactor: true,
@@ -46,6 +49,57 @@ export default function Settings() {
     }
   });
 
+  useEffect(() => {
+    if (activeTab === 'integrations') {
+      loadIntegrations();
+    }
+  }, [activeTab]);
+
+  const loadIntegrations = async () => {
+    setLoading(true);
+    try {
+      const response = await MockBackendService.getIntegrations();
+      setIntegrations(response.data.integrations);
+    } catch (error) {
+      toast.error('Failed to load integrations');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const testIntegration = async (integrationId: string) => {
+    setTestingIntegration(integrationId);
+    try {
+      const response = await MockBackendService.testIntegration(integrationId);
+      if (response.data.status === 'success') {
+        toast.success(`${integrationId} connection successful`);
+      } else {
+        toast.error(`${integrationId} connection failed`);
+      }
+    } catch (error) {
+      toast.error(`Failed to test ${integrationId} connection`);
+    } finally {
+      setTestingIntegration(null);
+    }
+  };
+
+  const toggleIntegration = async (integrationId: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'connected' ? 'disconnected' : 'connected';
+    try {
+      await MockBackendService.updateIntegrationStatus(integrationId, newStatus);
+      setIntegrations(prev => 
+        prev.map(integration => 
+          integration.id === integrationId 
+            ? { ...integration, status: newStatus }
+            : integration
+        )
+      );
+      toast.success(`${integrationId} ${newStatus === 'connected' ? 'connected' : 'disconnected'}`);
+    } catch (error) {
+      toast.error(`Failed to update ${integrationId} status`);
+    }
+  };
+
   const tabs = [
     { id: 'integrations', label: 'Integrations', icon: GitBranch },
     { id: 'notifications', label: 'Notifications', icon: Bell },
@@ -54,68 +108,49 @@ export default function Settings() {
     { id: 'system', label: 'System', icon: SettingsIcon }
   ];
 
-  const integrationServices = [
-    {
-      id: 'github',
-      name: 'GitHub',
-      description: 'Source code management and version control',
-      icon: GitBranch,
-      color: 'bg-gray-900',
-      connected: settings.integrations.github.connected
-    },
-    {
-      id: 'jenkins',
-      name: 'Jenkins',
-      description: 'Continuous integration and deployment',
-      icon: RefreshCw,
-      color: 'bg-blue-600',
-      connected: settings.integrations.jenkins.connected
-    },
-    {
-      id: 'docker',
-      name: 'Docker Registry',
-      description: 'Container image registry',
-      icon: Database,
-      color: 'bg-blue-500',
-      connected: settings.integrations.docker.connected
-    },
-    {
-      id: 'kubernetes',
-      name: 'Kubernetes',
-      description: 'Container orchestration platform',
-      icon: Cloud,
-      color: 'bg-purple-600',
-      connected: settings.integrations.kubernetes.connected
-    },
-    {
-      id: 'slack',
-      name: 'Slack',
-      description: 'Team communication and alerts',
-      icon: Mail,
-      color: 'bg-green-600',
-      connected: settings.integrations.slack.connected
-    },
-    {
-      id: 'prometheus',
-      name: 'Prometheus',
-      description: 'Monitoring and alerting toolkit',
-      icon: TestTube,
-      color: 'bg-orange-600',
-      connected: settings.integrations.prometheus.connected
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'connected':
+        return <CheckCircle className="w-4 h-4 text-emerald-500" />;
+      case 'disconnected':
+        return <X className="w-4 h-4 text-gray-400" />;
+      case 'error':
+        return <AlertCircle className="w-4 h-4 text-red-500" />;
+      case 'configuring':
+        return <Clock className="w-4 h-4 text-yellow-500" />;
+      default:
+        return <Clock className="w-4 h-4 text-gray-400" />;
     }
-  ];
+  };
 
-  const handleToggleIntegration = (serviceId: string) => {
-    setSettings(prev => ({
-      ...prev,
-      integrations: {
-        ...prev.integrations,
-        [serviceId]: {
-          ...prev.integrations[serviceId as keyof typeof prev.integrations],
-          connected: !prev.integrations[serviceId as keyof typeof prev.integrations].connected
-        }
-      }
-    }));
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'connected':
+        return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      case 'disconnected':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'error':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'configuring':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getIntegrationIcon = (type: string) => {
+    switch (type) {
+      case 'ci_cd':
+        return GitBranch;
+      case 'monitoring':
+        return Activity;
+      case 'security':
+        return Shield;
+      case 'communication':
+        return Mail;
+      default:
+        return Database;
+    }
   };
 
   const renderIntegrationsTab = () => (
@@ -125,43 +160,120 @@ export default function Settings() {
         <p className="text-gray-600">Connect and manage external services for your DevSecOps pipeline</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {integrationServices.map((service) => (
-          <div key={service.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-start justify-between">
-              <div className="flex items-start space-x-4">
-                <div className={`w-12 h-12 ${service.color} rounded-lg flex items-center justify-center`}>
-                  <service.icon className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">{service.name}</h3>
-                  <p className="text-sm text-gray-600 mt-1">{service.description}</p>
-                  <div className="flex items-center space-x-2 mt-3">
-                    <div className={`w-2 h-2 rounded-full ${
-                      service.connected ? 'bg-emerald-500' : 'bg-gray-400'
-                    }`}></div>
-                    <span className={`text-sm font-medium ${
-                      service.connected ? 'text-emerald-600' : 'text-gray-500'
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {integrations.map((integration) => {
+            const Icon = getIntegrationIcon(integration.type);
+            const isConnected = integration.status === 'connected';
+            
+            return (
+              <div key={integration.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-start space-x-4">
+                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                      isConnected ? 'bg-emerald-100' : 'bg-gray-100'
                     }`}>
-                      {service.connected ? 'Connected' : 'Disconnected'}
-                    </span>
+                      <Icon className={`w-6 h-6 ${isConnected ? 'text-emerald-600' : 'text-gray-600'}`} />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{integration.name}</h3>
+                      <p className="text-sm text-gray-600 capitalize">{integration.type.replace('_', ' ')}</p>
+                      <div className="flex items-center space-x-2 mt-2">
+                        {getStatusIcon(integration.status)}
+                        <span className={`text-sm font-medium px-2 py-1 rounded-full border ${getStatusColor(integration.status)}`}>
+                          {integration.status}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
+
+                {/* Integration Metrics */}
+                {integration.metrics && isConnected && (
+                  <div className="grid grid-cols-3 gap-4 mb-4 p-3 bg-gray-50 rounded-lg">
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-gray-900">{integration.metrics.uptime}</p>
+                      <p className="text-xs text-gray-500">Uptime</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-gray-900">{integration.metrics.requests.toLocaleString()}</p>
+                      <p className="text-xs text-gray-500">Requests</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-gray-900">{integration.metrics.errors}</p>
+                      <p className="text-xs text-gray-500">Errors</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Last Sync */}
+                {integration.lastSync && (
+                  <div className="mb-4">
+                    <p className="text-xs text-gray-500">
+                      Last sync: {new Date(integration.lastSync).toLocaleString()}
+                    </p>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => testIntegration(integration.id)}
+                    disabled={testingIntegration === integration.id}
+                    className="flex-1 px-3 py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
+                  >
+                    {testingIntegration === integration.id ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                        <span>Testing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <TestTube className="w-4 h-4" />
+                        <span>Test</span>
+                      </>
+                    )}
+                  </button>
+                  
+                  <button
+                    onClick={() => toggleIntegration(integration.id, integration.status)}
+                    className={`flex-1 px-3 py-2 rounded-lg font-medium transition-colors ${
+                      isConnected
+                        ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                        : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                    }`}
+                  >
+                    {isConnected ? 'Disconnect' : 'Connect'}
+                  </button>
+                </div>
+
+                {/* Configuration Details */}
+                {isConnected && integration.config && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <h4 className="text-sm font-medium text-gray-900 mb-2">Configuration</h4>
+                    <div className="space-y-1">
+                      {Object.entries(integration.config).slice(0, 3).map(([key, value]) => (
+                        <div key={key} className="flex justify-between text-xs">
+                          <span className="text-gray-500 capitalize">{key.replace(/([A-Z])/g, ' $1').toLowerCase()}:</span>
+                          <span className="text-gray-900 font-mono">
+                            {typeof value === 'string' && value.includes('***') ? value : 
+                             typeof value === 'string' && value.length > 20 ? `${value.substring(0, 20)}...` : 
+                             String(value)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-              <button
-                onClick={() => handleToggleIntegration(service.id)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  service.connected
-                    ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
-              >
-                {service.connected ? 'Disconnect' : 'Connect'}
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 
@@ -362,10 +474,10 @@ export default function Settings() {
         </div>
         <div className="divide-y divide-gray-200">
           {[
-            { name: 'Kamalraj', email: 'techey.kamal@gmail.com', role: 'Admin', status: 'Active' },
-            { name: 'Karthick', email: 'karthick@example.com', role: 'Devops', status: 'Active' },
+            { name: 'Kamal Raj', email: 'techey.kamal@gmail.com', role: 'Admin', status: 'Active' },
+            { name: 'Karthick', email: 'karthick@example.com', role: 'DevOps', status: 'Active' },
             { name: 'Kalai', email: 'kalai@example.com', role: 'DevOps', status: 'Active' },
-            { name: 'Praveen', email: 'sarah@example.com', role: 'SecOps', status: 'Active' }
+            { name: 'Praveen', email: 'praveen@example.com', role: 'SecOps', status: 'Active' }
           ].map((user, index) => (
             <div key={index} className="p-6 flex items-center justify-between">
               <div className="flex items-center space-x-4">
@@ -483,6 +595,10 @@ export default function Settings() {
     }
   };
 
+  const saveSettings = () => {
+    toast.success('Settings saved successfully!');
+  };
+
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-8">
@@ -490,7 +606,10 @@ export default function Settings() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
           <p className="text-gray-600">Configure your DevSecOps platform preferences and integrations</p>
         </div>
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+        <button 
+          onClick={saveSettings}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+        >
           <Save className="w-4 h-4" />
           <span>Save Changes</span>
         </button>

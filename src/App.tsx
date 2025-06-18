@@ -10,6 +10,7 @@ import SecurityScanner from './components/SecurityScanner';
 import Monitoring from './components/Monitoring';
 import AIAssistant from './components/AIAssistant';
 import Settings from './components/Settings';
+import Footer from './components/Footer';
 
 function App() {
   const { isAuthenticated, user, setLoading } = useAuthStore();
@@ -68,8 +69,11 @@ function App() {
     <>
       <div className="flex h-screen bg-gray-100">
         <Sidebar activeView={activeView} onViewChange={setActiveView} />
-        <div className="flex-1 overflow-auto">
-          {renderView()}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-auto">
+            {renderView()}
+          </div>
+          <Footer />
         </div>
       </div>
       <Toaster 

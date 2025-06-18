@@ -6,9 +6,13 @@ import {
   Activity, 
   MessageSquare, 
   Settings,
-  Zap
+  Zap,
+  LogOut,
+  User
 } from 'lucide-react';
 import { NavItem } from '../types';
+import { useAuthStore } from '../store/authStore';
+import toast from 'react-hot-toast';
 
 interface SidebarProps {
   activeView: string;
@@ -34,6 +38,13 @@ const iconMap = {
 };
 
 export default function Sidebar({ activeView, onViewChange }: SidebarProps) {
+  const { user, logout } = useAuthStore();
+
+  const handleSignOut = () => {
+    logout();
+    toast.success('Successfully signed out');
+  };
+
   return (
     <div className="w-64 bg-gray-900 text-white flex flex-col h-full">
       <div className="p-6 border-b border-gray-800">
@@ -71,16 +82,26 @@ export default function Sidebar({ activeView, onViewChange }: SidebarProps) {
         </ul>
       </nav>
       
-      <div className="p-4 border-t border-gray-800">
+      <div className="p-4 border-t border-gray-800 space-y-3">
+        {/* User Profile */}
         <div className="flex items-center space-x-3 p-3 bg-gray-800 rounded-lg">
-          <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
-            <span className="text-sm font-semibold">KR</span>
+          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+            <User className="w-4 h-4 text-white" />
           </div>
-          <div className="flex-1">
-            <p className="text-sm font-medium">Kamal Raj</p>
-            <p className="text-xs text-gray-400">DevOps Engineer</p>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-white truncate">{user?.name || 'User'}</p>
+            <p className="text-xs text-gray-400 truncate">{user?.role || 'Member'}</p>
           </div>
         </div>
+
+        {/* Sign Out Button */}
+        <button
+          onClick={handleSignOut}
+          className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-red-600 hover:text-white rounded-lg transition-all duration-200 group"
+        >
+          <LogOut className="w-5 h-5" />
+          <span className="font-medium">Sign Out</span>
+        </button>
       </div>
     </div>
   );
