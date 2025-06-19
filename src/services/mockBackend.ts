@@ -49,7 +49,7 @@ interface Vulnerability {
 interface Integration {
   id: string;
   name: string;
-  type: 'ci_cd' | 'monitoring' | 'security' | 'communication';
+  type: 'ci_cd' | 'monitoring' | 'security' | 'communication' | 'container' | 'orchestration';
   status: 'connected' | 'disconnected' | 'error' | 'configuring';
   lastSync?: string;
   config: Record<string, any>;
@@ -173,93 +173,170 @@ let vulnerabilities: Vulnerability[] = [
 // Enhanced integrations with real functionality simulation
 let integrations: Integration[] = [
   {
-    id: 'jenkins',
-    name: 'Jenkins CI/CD',
-    type: 'ci_cd',
-    status: 'connected',
-    lastSync: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+    id: 'kubernetes',
+    name: 'Kubernetes Cluster',
+    type: 'orchestration',
+    status: 'disconnected',
     config: {
-      serverUrl: 'https://jenkins.company.com',
-      username: 'admin',
-      apiToken: '***hidden***',
-      webhookUrl: 'https://jenkins.company.com/github-webhook/'
+      endpoint: 'https://kubernetes.default.svc.cluster.local',
+      namespace: 'default',
+      kubeconfig: '/etc/kubernetes/admin.conf',
+      clusterName: 'production-cluster',
+      version: 'v1.28.0',
+      nodes: 0,
+      pods: 0,
+      services: 0
     },
     metrics: {
-      uptime: '99.8%',
-      requests: 1247,
-      errors: 3
+      uptime: '0%',
+      requests: 0,
+      errors: 0
     }
   },
   {
     id: 'prometheus',
     name: 'Prometheus Monitoring',
     type: 'monitoring',
-    status: 'connected',
-    lastSync: new Date(Date.now() - 1 * 60 * 1000).toISOString(),
+    status: 'disconnected',
     config: {
-      serverUrl: 'http://prometheus:9090',
+      endpoint: 'http://prometheus.monitoring.svc.cluster.local:9090',
       scrapeInterval: '30s',
+      evaluationInterval: '30s',
       retentionTime: '15d',
-      alertmanagerUrl: 'http://alertmanager:9093'
+      alertmanagerUrl: 'http://alertmanager:9093',
+      grafanaUrl: 'http://grafana:3000',
+      targets: []
     },
     metrics: {
-      uptime: '99.9%',
-      requests: 45678,
-      errors: 12
+      uptime: '0%',
+      requests: 0,
+      errors: 0
     }
   },
   {
-    id: 'kubernetes',
-    name: 'Kubernetes Cluster',
-    type: 'monitoring',
-    status: 'connected',
-    lastSync: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+    id: 'jenkins',
+    name: 'Jenkins CI/CD',
+    type: 'ci_cd',
+    status: 'disconnected',
     config: {
-      clusterEndpoint: 'https://k8s-api.company.com',
-      namespace: 'default',
-      serviceAccount: 'secureops-sa',
-      kubeconfig: '***hidden***'
+      endpoint: 'http://jenkins.ci.svc.cluster.local:8080',
+      username: 'admin',
+      apiKey: '***hidden***',
+      version: '2.426.1',
+      plugins: ['kubernetes', 'docker', 'git', 'pipeline-stage-view'],
+      executors: 4,
+      jobs: 0,
+      builds: 0,
+      webhookUrl: '/github-webhook/',
+      slaveNodes: 2
     },
     metrics: {
-      uptime: '99.5%',
-      requests: 8934,
-      errors: 45
+      uptime: '0%',
+      requests: 0,
+      errors: 0
+    }
+  },
+  {
+    id: 'docker-registry',
+    name: 'Docker Registry',
+    type: 'container',
+    status: 'disconnected',
+    config: {
+      endpoint: 'https://registry.company.com',
+      username: 'secureops',
+      token: '***hidden***',
+      version: '2.8.1',
+      storage: 'filesystem',
+      repositories: 0,
+      totalSize: '0 GB',
+      namespace: 'secureops',
+      pullPolicy: 'Always'
+    },
+    metrics: {
+      uptime: '0%',
+      requests: 0,
+      errors: 0
     }
   },
   {
     id: 'trivy',
     name: 'Trivy Security Scanner',
     type: 'security',
-    status: 'connected',
-    lastSync: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+    status: 'disconnected',
     config: {
-      scannerVersion: 'v0.45.1',
+      endpoint: 'http://trivy.security.svc.cluster.local:8080',
+      version: 'v0.45.1',
       dbVersion: '2023-11-15',
-      scanTypes: ['vuln', 'secret', 'config'],
-      severity: ['CRITICAL', 'HIGH', 'MEDIUM']
+      scanTypes: ['vuln', 'secret', 'config', 'license'],
+      severity: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'],
+      timeout: '5m',
+      cacheDir: '/tmp/trivy'
     },
     metrics: {
-      uptime: '98.7%',
-      requests: 234,
-      errors: 8
+      uptime: '0%',
+      requests: 0,
+      errors: 0
     }
   },
   {
-    id: 'github',
-    name: 'GitHub Integration',
-    type: 'ci_cd',
-    status: 'connected',
-    lastSync: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+    id: 'sonarqube',
+    name: 'SonarQube Code Quality',
+    type: 'security',
+    status: 'disconnected',
     config: {
-      apiUrl: 'https://api.github.com',
-      organization: 'secureops',
-      webhookSecret: '***hidden***',
-      accessToken: '***hidden***'
+      endpoint: 'http://sonarqube.security.svc.cluster.local:9000',
+      token: '***hidden***',
+      version: '9.9.2',
+      edition: 'Community',
+      projects: 0,
+      linesOfCode: 0,
+      qualityGates: 1,
+      rules: 4000
     },
     metrics: {
-      uptime: '99.9%',
-      requests: 567,
-      errors: 2
+      uptime: '0%',
+      requests: 0,
+      errors: 0
+    }
+  },
+  {
+    id: 'grafana',
+    name: 'Grafana Dashboards',
+    type: 'monitoring',
+    status: 'disconnected',
+    config: {
+      endpoint: 'http://grafana.monitoring.svc.cluster.local:3000',
+      username: 'admin',
+      token: '***hidden***',
+      version: '10.2.0',
+      dashboards: 0,
+      datasources: 0,
+      users: 1,
+      organizations: 1,
+      alertRules: 0
+    },
+    metrics: {
+      uptime: '0%',
+      requests: 0,
+      errors: 0
+    }
+  },
+  {
+    id: 'slack',
+    name: 'Slack Notifications',
+    type: 'communication',
+    status: 'disconnected',
+    config: {
+      token: '***hidden***',
+      workspace: 'secureops-team',
+      channels: ['#alerts', '#deployments', '#security'],
+      botName: 'VisionOps Bot',
+      webhookUrl: '***hidden***'
+    },
+    metrics: {
+      uptime: '0%',
+      requests: 0,
+      errors: 0
     }
   }
 ];
@@ -605,9 +682,8 @@ export class MockBackendService {
 - Outdated cryptographic library - Upgrade crypto-js to v4.1.1
 
 **Integration Status:**
-- Trivy Scanner: ✅ Connected (Last scan: 10 minutes ago)
-- OWASP ZAP: ⚠️ Needs configuration
-- Bandit: ✅ Active
+- Trivy Scanner: ${integrations.find(i => i.id === 'trivy')?.status === 'connected' ? '✅ Connected' : '❌ Disconnected'}
+- SonarQube: ${integrations.find(i => i.id === 'sonarqube')?.status === 'connected' ? '✅ Connected' : '❌ Disconnected'}
 
 **Recommendations:**
 1. Implement input validation middleware across all API endpoints
@@ -631,9 +707,8 @@ Would you like me to generate specific code examples for any of these fixes?`;
 - API response time: 245ms (acceptable but improvable)
 
 **Kubernetes Cluster Health:**
-- 4 nodes active (1 control-plane, 3 workers)
-- worker-2 showing high resource usage (89% CPU, 94% Memory)
-- 24 pods running, 2 pending
+- ${integrations.find(i => i.id === 'kubernetes')?.status === 'connected' ? '✅ Connected' : '❌ Disconnected'} - 4 nodes configured
+- Prometheus: ${integrations.find(i => i.id === 'prometheus')?.status === 'connected' ? '✅ Monitoring active' : '❌ Not monitoring'}
 
 **Performance Bottlenecks:**
 1. High CPU usage on worker-2 node (89%)
@@ -657,9 +732,8 @@ Would you like detailed implementation steps for any of these optimizations?`;
       return `I've reviewed your CI/CD pipeline configuration and Jenkins integration:
 
 **Jenkins Status:**
-- ✅ Connected and healthy (99.8% uptime)
-- 1,247 requests processed, 3 errors
-- Last sync: 5 minutes ago
+- ${integrations.find(i => i.id === 'jenkins')?.status === 'connected' ? '✅ Connected and healthy' : '❌ Not connected'}
+- Docker Registry: ${integrations.find(i => i.id === 'docker-registry')?.status === 'connected' ? '✅ Available' : '❌ Not available'}
 
 **Current Pipeline Analysis:**
 - Average build time: 3m 24s
@@ -691,88 +765,82 @@ Would you like me to generate the updated Jenkinsfile configuration?`;
     }
 
     if (lowerInput.includes('kubernetes') || lowerInput.includes('k8s')) {
-      return `Here's an analysis of your Kubernetes cluster health:
+      return `Here's an analysis of your Kubernetes cluster configuration:
 
-**Cluster Overview:**
-- ✅ Connected and monitored
-- 4 nodes active (1 control-plane, 3 workers)
-- 24 pods running, 2 pending, 1 failed
-- 12 services active
+**Cluster Status:**
+- Connection: ${integrations.find(i => i.id === 'kubernetes')?.status === 'connected' ? '✅ Connected' : '❌ Not connected'}
+- Monitoring: ${integrations.find(i => i.id === 'prometheus')?.status === 'connected' ? '✅ Prometheus active' : '❌ No monitoring'}
+- Grafana: ${integrations.find(i => i.id === 'grafana')?.status === 'connected' ? '✅ Dashboards available' : '❌ No dashboards'}
 
-**Node Status:**
-- **master-1**: ✅ Healthy (CPU: 23%, Memory: 67%)
-- **worker-1**: ✅ Healthy (CPU: 45%, Memory: 72%)
-- **worker-2**: ⚠️ High resource usage (CPU: 89%, Memory: 94%)
-- **worker-3**: ✅ Healthy (CPU: 34%, Memory: 58%)
+**Configured Resources:**
+- 4 nodes planned (1 control-plane, 3 workers)
+- Default namespace configured
+- Version: v1.28.0
 
 **Recommendations:**
-1. **Immediate Action:** Investigate worker-2 resource usage
-   - Check for resource-intensive pods
-   - Consider pod redistribution or node scaling
-
+1. **Connect to Cluster:** Establish connection to begin monitoring
 2. **Resource Management:**
    - Implement resource requests and limits
    - Set up Horizontal Pod Autoscaler (HPA)
    - Configure cluster autoscaling
 
-3. **Monitoring Improvements:**
-   - Set up alerts for node resource thresholds
-   - Implement pod disruption budgets
-   - Monitor cluster events and logs
+3. **Monitoring Setup:**
+   - Enable Prometheus metrics collection
+   - Set up Grafana dashboards
+   - Configure alerting rules
 
-**Quick Commands:**
+**Quick Setup Commands:**
 \`\`\`bash
-kubectl top nodes
-kubectl describe node worker-2
-kubectl get pods --all-namespaces -o wide
+# Test cluster connection
+kubectl cluster-info
+
+# Check node status
+kubectl get nodes
+
+# Verify system pods
+kubectl get pods -n kube-system
 \`\`\`
 
-Would you like me to help you investigate the worker-2 issues or set up autoscaling?`;
+Would you like me to help you establish the cluster connection or set up monitoring?`;
     }
 
     if (lowerInput.includes('prometheus') || lowerInput.includes('monitoring')) {
-      return `Here's your Prometheus monitoring status and recommendations:
+      return `Here's your Prometheus monitoring configuration status:
 
 **Prometheus Status:**
-- ✅ Connected and active (99.9% uptime)
-- 45,678 requests processed, 12 errors
-- Scrape interval: 30s, Retention: 15d
+- Connection: ${integrations.find(i => i.id === 'prometheus')?.status === 'connected' ? '✅ Connected' : '❌ Not connected'}
+- Grafana: ${integrations.find(i => i.id === 'grafana')?.status === 'connected' ? '✅ Dashboards ready' : '❌ No dashboards'}
+- Kubernetes: ${integrations.find(i => i.id === 'kubernetes')?.status === 'connected' ? '✅ Cluster metrics' : '❌ No cluster metrics'}
 
-**Current Metrics Collection:**
-- System metrics: CPU, Memory, Disk, Network
-- Application metrics: Response time, Throughput, Error rate
-- Kubernetes metrics: Node status, Pod health, Resource usage
-
-**Alert Rules Active:**
-- High CPU usage (>80% for 5 minutes)
-- Memory usage (>90% for 10 minutes)
-- Disk space (>85%)
-- Pod restart rate (>5 restarts/hour)
+**Configuration:**
+- Scrape interval: 30s
+- Retention: 15d
+- Alertmanager integration planned
 
 **Recommendations:**
-1. **Alerting Improvements:**
-   - Add custom business metrics
-   - Configure Slack/email notifications
-   - Set up escalation policies
-
-2. **Dashboard Enhancements:**
+1. **Connect Prometheus:** Establish monitoring connection
+2. **Dashboard Setup:**
    - Create service-specific dashboards
    - Add SLA/SLO tracking
    - Implement capacity planning views
 
-3. **Performance Optimization:**
-   - Optimize query performance
-   - Configure recording rules
-   - Set up federation for multi-cluster
+3. **Alerting Configuration:**
+   - Set up critical alerts
+   - Configure Slack notifications
+   - Establish escalation policies
 
-**Sample PromQL Queries:**
-\`\`\`promql
-rate(http_requests_total[5m])
-node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes
-kube_pod_container_status_restarts_total
-\`\`\`
+**Sample Monitoring Targets:**
+- Kubernetes API server
+- Node metrics
+- Pod resource usage
+- Application metrics
 
-Would you like me to help you set up specific alerts or dashboards?`;
+**Next Steps:**
+1. Connect to Prometheus server
+2. Configure Grafana dashboards
+3. Set up alerting rules
+
+Would you like me to help you configure specific monitoring targets or alerts?`;
     }
     
     return `I understand you'd like help with: "${userInput}"
@@ -783,15 +851,16 @@ I can assist you with various DevSecOps tasks including:
 • **Performance Monitoring** - System optimization and bottleneck identification  
 • **Log Analysis** - Error pattern detection and root cause analysis
 • **Pipeline Optimization** - CI/CD improvement recommendations
-• **Infrastructure Insights** - Kubernetes and resource management guidance
-• **Integration Management** - Jenkins, Prometheus, and security tool configuration
+• **Infrastructure Management** - Kubernetes and container orchestration
+• **Integration Setup** - Connect and configure DevSecOps tools
 
 **Current Integration Status:**
-- Jenkins: ✅ Connected (99.8% uptime)
-- Prometheus: ✅ Active (99.9% uptime)
-- Kubernetes: ✅ Monitored (4 nodes)
-- Trivy Scanner: ✅ Running
-- GitHub: ✅ Integrated
+- Kubernetes: ${integrations.find(i => i.id === 'kubernetes')?.status || 'Not configured'}
+- Jenkins: ${integrations.find(i => i.id === 'jenkins')?.status || 'Not configured'}
+- Prometheus: ${integrations.find(i => i.id === 'prometheus')?.status || 'Not configured'}
+- Trivy Scanner: ${integrations.find(i => i.id === 'trivy')?.status || 'Not configured'}
+
+To get started, I recommend connecting your integrations through the Settings → Integrations tab. This will enable full monitoring and automation capabilities.
 
 Could you please provide more specific details about what you'd like me to analyze or help you with?`;
   }
