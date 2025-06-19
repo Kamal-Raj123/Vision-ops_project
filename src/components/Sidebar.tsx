@@ -7,12 +7,10 @@ import {
   MessageSquare, 
   Settings,
   Zap,
-  LogOut,
   User
 } from 'lucide-react';
 import { NavItem } from '../types';
 import { useAuthStore } from '../store/authStore';
-import toast from 'react-hot-toast';
 
 interface SidebarProps {
   activeView: string;
@@ -38,12 +36,7 @@ const iconMap = {
 };
 
 export default function Sidebar({ activeView, onViewChange }: SidebarProps) {
-  const { user, logout } = useAuthStore();
-
-  const handleSignOut = () => {
-    logout();
-    toast.success('Successfully signed out');
-  };
+  const { user } = useAuthStore();
 
   return (
     <div className="w-64 bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800 text-white flex flex-col h-full shadow-2xl">
@@ -82,7 +75,7 @@ export default function Sidebar({ activeView, onViewChange }: SidebarProps) {
         </ul>
       </nav>
       
-      <div className="p-4 border-t border-gray-700 space-y-3">
+      <div className="p-4 border-t border-gray-700">
         {/* User Profile */}
         <div className="flex items-center space-x-3 p-3 bg-gray-800 rounded-xl border border-gray-700">
           <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
@@ -93,15 +86,6 @@ export default function Sidebar({ activeView, onViewChange }: SidebarProps) {
             <p className="text-xs text-blue-300 truncate capitalize">{user?.role || 'Member'}</p>
           </div>
         </div>
-
-        {/* Sign Out Button */}
-        <button
-          onClick={handleSignOut}
-          className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-red-600 hover:text-white rounded-xl transition-all duration-200 group"
-        >
-          <LogOut className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-          <span className="font-medium">Sign Out</span>
-        </button>
       </div>
     </div>
   );
