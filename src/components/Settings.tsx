@@ -24,19 +24,25 @@ import {
   LogOut,
   User,
   Server,
-  Container,
-  BarChart3,
-  MessageSquare
+  Package,
+  MessageSquare,
+  Play,
+  Eye
 } from 'lucide-react';
-import { integrationService, IntegrationConfig } from '../services/integrationService';
 import { useAuthStore } from '../store/authStore';
+import { integrationService, IntegrationConfig, TestResult } from '../services/integrationService';
+import IntegrationCard from './IntegrationCard';
+import IntegrationMetrics from './IntegrationMetrics';
 import toast from 'react-hot-toast';
-import IntegrationDashboard from './IntegrationDashboard';
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState('integrations');
+  const [integrations, setIntegrations] = useState<IntegrationConfig[]>([]);
   const [loading, setLoading] = useState(false);
-  const [testingIntegration, setTestingIntegration] = useState<string | null>(null);
+  const [selectedMetricsIntegration, setSelectedMetricsIntegration] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const { user, logout } = useAuthStore();
   
   const [settings, setSettings] = useState({
@@ -57,6 +63,82 @@ export default function Settings() {
     }
   });
 
+  useEffect(() => {
+    if (activeTab === 'integrations') {
+      loadIntegrations();
+    }
+  }, [activeTab]);
+
+  const loadIntegrations = async () => {
+    setLoading(true);
+    try {
+      const allIntegrations = integrationService.getAllIntegrations();
+      setIntegrations(allIntegrations);
+    } catch (error) {
+      toast.error('Failed to load integrations');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTestIntegration = async (integrationId: string): Promise<TestResult> => {
+    try {
+      const result = await integrationService.testConnection(integrationId);
+      
+      if (result.success) {
+        toast.success(`${integrationId} connection successful`);
+        // Refresh integrations to show updated status
+        loadIntegrations();
+      } else {
+        toast.error(`${integrationId} connection failed: ${result.message}`);
+      }
+      
+      return result;
+    } catch (error) {
+      const errorResult: TestResult = {
+        success: false,
+        message: error.message,
+        responseTime: 0,
+        timestamp: new Date().toISOString()
+      };
+      toast.error(`Failed to test ${integrationId}: ${error.message}`);
+      return errorResult;
+    }
+  };
+
+  const handleDeployIntegration = async (integrationId: string) => {
+    try {
+      const result = await integrationService.deployTestEnvironment(integrationId);
+      
+      if (result.success) {
+        toast.success(`${integrationId} test environment deployed successfully`);
+        loadIntegrations();
+      } else {
+        toast.error(`Failed to deploy ${integrationId}: ${result.message}`);
+      }
+      
+      return result;
+    } catch (error) {
+      toast.error(`Deployment failed: ${error.message}`);
+      throw error;
+    }
+  };
+
+  const handleConfigureIntegration = (integrationId: string) => {
+    toast.info(`Configuration panel for ${integrationId} would open here`);
+    // In a real implementation, this would open a configuration modal
+  };
+
+  const handleViewMetrics = (integrationId: string) => {
+    const integration = integrations.find(i => i.id === integrationId);
+    if (integration) {
+      setSelectedMetricsIntegration({
+        id: integration.id,
+        name: integration.name
+      });
+    }
+  };
+
   const handleSignOut = () => {
     logout();
     toast.success('Successfully signed out');
@@ -71,9 +153,155 @@ export default function Settings() {
     { id: 'system', label: 'System', icon: SettingsIcon }
   ];
 
-  const renderIntegrationsTab = () => (
-    <IntegrationDashboard />
-  );
+  const renderIntegrationsTab = () => {
+    const integrationsByType = {
+      orchestration: integrations.filter(i => i.type === 'orchestration'),
+      monitoring: integrations.filter(i => i.type === 'monitoring'),
+      ci_cd: integrations.filter(i => i.type === 'ci_cd'),
+      security: integrations.filter(i => i.type === 'security'),
+      container: integrations.filter(i => i.type === 'container'),
+      communication: integrations.filter(i => i.type === 'communication')
+    };
+
+    const typeLabels = {
+      orchestration: 'Container Orchestration',
+      monitoring: 'Monitoring & Observability',
+      ci_cd: 'CI/CD & Automation',
+      security: 'Security & Compliance',
+      container: 'Container Registry',
+      communication: 'Communication & Alerts'
+    };
+
+    const typeIcons = {
+      orchestration: Server,
+      monitoring: Activity,
+      ci_cd: GitBranch,
+      security: Shield,
+      container: Package,
+      communication: MessageSquare
+    };
+
+    return (
+      <div className="space-y-8">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">DevSecOps Integrations</h2>
+            <p className="text-gray-600">Connect and manage your DevSecOps toolchain</p>
+          </div>
+          <div className="flex items-center space-x-3">
+            <div className="text-sm text-gray-600">
+              {integrations.filter(i => i.status === 'connected').length} of {integrations.length} connected
+            </div>
+            <button
+              onClick={loadIntegrations}
+              disabled={loading}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Integration Status Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-200">
+            <div className="flex items-center space-x-3">
+              <CheckCircle className="w-8 h-8 text-emerald-600" />
+              <div>
+                <p className="text-2xl font-bold text-emerald-900">
+                  {integrations.filter(i => i.status === 'connected').length}
+                </p>
+                <p className="text-sm text-emerald-700">Connected</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
+            <div className="flex items-center space-x-3">
+              <Clock className="w-8 h-8 text-yellow-600" />
+              <div>
+                <p className="text-2xl font-bold text-yellow-900">
+                  {integrations.filter(i => i.status === 'configuring').length}
+                </p>
+                <p className="text-sm text-yellow-700">Deploying</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-red-50 rounded-xl p-4 border border-red-200">
+            <div className="flex items-center space-x-3">
+              <AlertCircle className="w-8 h-8 text-red-600" />
+              <div>
+                <p className="text-2xl font-bold text-red-900">
+                  {integrations.filter(i => i.status === 'error').length}
+                </p>
+                <p className="text-sm text-red-700">Errors</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+            <div className="flex items-center space-x-3">
+              <X className="w-8 h-8 text-gray-600" />
+              <div>
+                <p className="text-2xl font-bold text-gray-900">
+                  {integrations.filter(i => i.status === 'disconnected').length}
+                </p>
+                <p className="text-sm text-gray-700">Disconnected</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <RefreshCw className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-4" />
+              <p className="text-gray-600">Loading integrations...</p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {Object.entries(integrationsByType).map(([type, typeIntegrations]) => {
+              if (typeIntegrations.length === 0) return null;
+              
+              const TypeIcon = typeIcons[type as keyof typeof typeIcons];
+              
+              return (
+                <div key={type}>
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <TypeIcon className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {typeLabels[type as keyof typeof typeLabels]}
+                    </h3>
+                    <div className="text-sm text-gray-500">
+                      ({typeIntegrations.filter(i => i.status === 'connected').length}/{typeIntegrations.length} connected)
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {typeIntegrations.map((integration) => (
+                      <IntegrationCard
+                        key={integration.id}
+                        integration={integration}
+                        onTest={handleTestIntegration}
+                        onConfigure={handleConfigureIntegration}
+                        onDeploy={handleDeployIntegration}
+                        onViewMetrics={handleViewMetrics}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderAccountTab = () => (
     <div className="space-y-6">
@@ -176,7 +404,7 @@ export default function Settings() {
         <div className="space-y-4">
           {[
             { key: 'email', label: 'Email Notifications', icon: Mail, description: 'Receive notifications via email' },
-            { key: 'slack', label: 'Slack Integration', icon: MessageSquare, description: 'Send alerts to Slack channels' },
+            { key: 'slack', label: 'Slack Integration', icon: Mail, description: 'Send alerts to Slack channels' },
             { key: 'webhook', label: 'Webhook Alerts', icon: Globe, description: 'Send notifications to custom endpoints' }
           ].map((channel) => (
             <div key={channel.key} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
@@ -382,52 +610,55 @@ export default function Settings() {
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
-      {activeTab !== 'integrations' && (
-        <>
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">Settings</h1>
-              <p className="text-gray-600 text-lg">Configure your DevSecOps platform preferences and integrations</p>
-            </div>
-            <button 
-              onClick={saveSettings}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl flex items-center space-x-2 transition-colors shadow-lg"
-            >
-              <Save className="w-5 h-5" />
-              <span>Save Changes</span>
-            </button>
-          </div>
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Settings</h1>
+          <p className="text-gray-600 text-lg">Configure your DevSecOps platform preferences and integrations</p>
+        </div>
+        <button 
+          onClick={saveSettings}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl flex items-center space-x-2 transition-colors shadow-lg"
+        >
+          <Save className="w-5 h-5" />
+          <span>Save Changes</span>
+        </button>
+      </div>
 
-          <div className="flex space-x-8">
-            {/* Enhanced Tabs */}
-            <div className="w-72">
-              <nav className="space-y-2">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                      activeTab === tab.id
-                        ? 'bg-white text-blue-700 font-medium shadow-lg border border-blue-200'
-                        : 'text-gray-600 hover:bg-white hover:shadow-md'
-                    }`}
-                  >
-                    <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-blue-600' : ''}`} />
-                    <span>{tab.label}</span>
-                  </button>
-                ))}
-              </nav>
-            </div>
+      <div className="flex space-x-8">
+        {/* Enhanced Tabs */}
+        <div className="w-72">
+          <nav className="space-y-2">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                  activeTab === tab.id
+                    ? 'bg-white text-blue-700 font-medium shadow-lg border border-blue-200'
+                    : 'text-gray-600 hover:bg-white hover:shadow-md'
+                }`}
+              >
+                <tab.icon className={`w-5 h-5 ${activeTab === tab.id ? 'text-blue-600' : ''}`} />
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </nav>
+        </div>
 
-            {/* Content */}
-            <div className="flex-1">
-              {renderTabContent()}
-            </div>
-          </div>
-        </>
+        {/* Content */}
+        <div className="flex-1">
+          {renderTabContent()}
+        </div>
+      </div>
+
+      {/* Metrics Modal */}
+      {selectedMetricsIntegration && (
+        <IntegrationMetrics
+          integrationId={selectedMetricsIntegration.id}
+          integrationName={selectedMetricsIntegration.name}
+          onClose={() => setSelectedMetricsIntegration(null)}
+        />
       )}
-
-      {activeTab === 'integrations' && renderTabContent()}
     </div>
   );
 }

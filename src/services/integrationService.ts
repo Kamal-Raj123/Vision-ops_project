@@ -15,9 +15,8 @@ export interface IntegrationConfig {
   config: Record<string, any>;
   healthCheck?: {
     url: string;
-    method: 'GET' | 'POST';
+    method: string;
     expectedStatus: number;
-    timeout: number;
   };
   metrics?: {
     uptime: string;
@@ -30,10 +29,9 @@ export interface IntegrationConfig {
 
 export interface TestResult {
   success: boolean;
-  responseTime: number;
-  status: string;
   message: string;
   details?: any;
+  responseTime: number;
   timestamp: string;
 }
 
@@ -58,24 +56,15 @@ class IntegrationService {
         },
         config: {
           namespace: 'default',
-          kubeconfig: '/etc/kubernetes/admin.conf',
           clusterName: 'production-cluster',
           version: 'v1.28.0',
           nodes: 4,
-          pods: 0,
-          services: 0
+          kubeconfig: '/etc/kubernetes/admin.conf'
         },
         healthCheck: {
           url: '/api/v1/nodes',
           method: 'GET',
-          expectedStatus: 200,
-          timeout: 5000
-        },
-        metrics: {
-          uptime: '0%',
-          requests: 0,
-          errors: 0,
-          responseTime: 0
+          expectedStatus: 200
         }
       },
       {
@@ -93,20 +82,12 @@ class IntegrationService {
           evaluationInterval: '30s',
           retentionTime: '15d',
           alertmanagerUrl: 'http://alertmanager:9093',
-          grafanaUrl: 'http://grafana:3000',
-          targets: ['kubernetes-apiservers', 'kubernetes-nodes', 'kubernetes-pods']
+          grafanaUrl: 'http://grafana:3000'
         },
         healthCheck: {
           url: '/-/healthy',
           method: 'GET',
-          expectedStatus: 200,
-          timeout: 3000
-        },
-        metrics: {
-          uptime: '0%',
-          requests: 0,
-          errors: 0,
-          responseTime: 0
+          expectedStatus: 200
         }
       },
       {
@@ -114,31 +95,22 @@ class IntegrationService {
         name: 'Jenkins CI/CD',
         type: 'ci_cd',
         status: 'disconnected',
-        endpoint: 'http://jenkins.ci.svc.cluster.local:8080',
+        endpoint: 'https://jenkins.company.com',
         credentials: {
           username: 'admin',
           apiKey: '***hidden***'
         },
         config: {
           version: '2.426.1',
+          executors: 8,
           plugins: ['kubernetes', 'docker', 'git', 'pipeline-stage-view'],
-          executors: 4,
-          jobs: 0,
-          builds: 0,
           webhookUrl: '/github-webhook/',
-          slaveNodes: 2
+          buildTimeout: 3600
         },
         healthCheck: {
           url: '/api/json',
           method: 'GET',
-          expectedStatus: 200,
-          timeout: 5000
-        },
-        metrics: {
-          uptime: '0%',
-          requests: 0,
-          errors: 0,
-          responseTime: 0
+          expectedStatus: 200
         }
       },
       {
@@ -152,24 +124,16 @@ class IntegrationService {
           token: '***hidden***'
         },
         config: {
-          version: '2.8.1',
-          storage: 'filesystem',
-          repositories: 0,
-          totalSize: '0 GB',
           namespace: 'secureops',
-          pullPolicy: 'Always'
+          version: '2.8.0',
+          storage: 's3',
+          scanOnPush: true,
+          retentionPolicy: '30d'
         },
         healthCheck: {
           url: '/v2/',
           method: 'GET',
-          expectedStatus: 200,
-          timeout: 3000
-        },
-        metrics: {
-          uptime: '0%',
-          requests: 0,
-          errors: 0,
-          responseTime: 0
+          expectedStatus: 200
         }
       },
       {
@@ -182,51 +146,13 @@ class IntegrationService {
           version: 'v0.45.1',
           dbVersion: '2023-11-15',
           scanTypes: ['vuln', 'secret', 'config', 'license'],
-          severity: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'],
-          timeout: '5m',
-          cacheDir: '/tmp/trivy'
+          severity: ['CRITICAL', 'HIGH', 'MEDIUM'],
+          timeout: '10m'
         },
         healthCheck: {
-          url: '/healthz',
+          url: '/health',
           method: 'GET',
-          expectedStatus: 200,
-          timeout: 3000
-        },
-        metrics: {
-          uptime: '0%',
-          requests: 0,
-          errors: 0,
-          responseTime: 0
-        }
-      },
-      {
-        id: 'sonarqube',
-        name: 'SonarQube Code Quality',
-        type: 'security',
-        status: 'disconnected',
-        endpoint: 'http://sonarqube.security.svc.cluster.local:9000',
-        credentials: {
-          token: '***hidden***'
-        },
-        config: {
-          version: '9.9.2',
-          edition: 'Community',
-          projects: 0,
-          linesOfCode: 0,
-          qualityGates: 1,
-          rules: 4000
-        },
-        healthCheck: {
-          url: '/api/system/health',
-          method: 'GET',
-          expectedStatus: 200,
-          timeout: 5000
-        },
-        metrics: {
-          uptime: '0%',
-          requests: 0,
-          errors: 0,
-          responseTime: 0
+          expectedStatus: 200
         }
       },
       {
@@ -241,23 +167,37 @@ class IntegrationService {
         },
         config: {
           version: '10.2.0',
-          dashboards: 0,
-          datasources: 0,
-          users: 1,
-          organizations: 1,
-          alertRules: 0
+          datasources: ['prometheus', 'loki', 'jaeger'],
+          dashboards: 15,
+          users: 25,
+          organizations: 3
         },
         healthCheck: {
           url: '/api/health',
           method: 'GET',
-          expectedStatus: 200,
-          timeout: 3000
+          expectedStatus: 200
+        }
+      },
+      {
+        id: 'sonarqube',
+        name: 'SonarQube Code Quality',
+        type: 'security',
+        status: 'disconnected',
+        endpoint: 'https://sonarqube.company.com',
+        credentials: {
+          token: '***hidden***'
         },
-        metrics: {
-          uptime: '0%',
-          requests: 0,
-          errors: 0,
-          responseTime: 0
+        config: {
+          version: '10.2.0',
+          projects: 12,
+          qualityGates: 3,
+          languages: ['java', 'javascript', 'python', 'go'],
+          coverage: 85
+        },
+        healthCheck: {
+          url: '/api/system/health',
+          method: 'GET',
+          expectedStatus: 200
         }
       },
       {
@@ -271,20 +211,13 @@ class IntegrationService {
         config: {
           workspace: 'secureops-team',
           channels: ['#alerts', '#deployments', '#security'],
-          botName: 'VisionOps Bot',
-          webhookUrl: '***hidden***'
+          webhookUrl: 'https://hooks.slack.com/services/***',
+          botName: 'SecureOps Bot'
         },
         healthCheck: {
           url: 'https://slack.com/api/auth.test',
           method: 'POST',
-          expectedStatus: 200,
-          timeout: 3000
-        },
-        metrics: {
-          uptime: '0%',
-          requests: 0,
-          errors: 0,
-          responseTime: 0
+          expectedStatus: 200
         }
       }
     ];
@@ -307,294 +240,205 @@ class IntegrationService {
       const testResult = await this.simulateConnectionTest(integration);
       const responseTime = Date.now() - startTime;
 
-      const result: TestResult = {
+      if (testResult.success) {
+        integration.status = 'connected';
+        integration.metrics = {
+          ...integration.metrics,
+          uptime: '99.9%',
+          requests: Math.floor(Math.random() * 10000) + 1000,
+          errors: Math.floor(Math.random() * 10),
+          lastSync: new Date().toISOString(),
+          responseTime
+        };
+      } else {
+        integration.status = 'error';
+      }
+
+      return {
         success: testResult.success,
-        responseTime,
-        status: testResult.success ? 'connected' : 'error',
         message: testResult.message,
         details: testResult.details,
+        responseTime,
         timestamp: new Date().toISOString()
       };
-
-      // Update integration status based on test result
-      integration.status = result.success ? 'connected' : 'error';
-      integration.metrics = {
-        ...integration.metrics!,
-        responseTime,
-        lastSync: new Date().toISOString()
-      };
-
-      return result;
     } catch (error) {
-      const responseTime = Date.now() - startTime;
       integration.status = 'error';
-      
       return {
         success: false,
-        responseTime,
-        status: 'error',
-        message: `Connection failed: ${error}`,
+        message: `Connection failed: ${error.message}`,
+        responseTime: Date.now() - startTime,
         timestamp: new Date().toISOString()
       };
     }
   }
 
-  private async simulateConnectionTest(integration: IntegrationConfig): Promise<{
-    success: boolean;
-    message: string;
-    details?: any;
-  }> {
+  private async simulateConnectionTest(integration: IntegrationConfig): Promise<{ success: boolean; message: string; details?: any }> {
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 500));
 
     const successRate = 0.85; // 85% success rate for realistic testing
     const isSuccess = Math.random() < successRate;
 
-    switch (integration.id) {
-      case 'kubernetes':
-        if (isSuccess) {
-          integration.config.nodes = 4;
-          integration.config.pods = Math.floor(Math.random() * 50) + 20;
-          integration.config.services = Math.floor(Math.random() * 20) + 10;
-          integration.metrics!.uptime = '99.5%';
-          integration.metrics!.requests = Math.floor(Math.random() * 10000) + 5000;
-          integration.metrics!.errors = Math.floor(Math.random() * 10);
-          
-          return {
-            success: true,
-            message: 'Successfully connected to Kubernetes cluster',
-            details: {
-              nodes: integration.config.nodes,
-              pods: integration.config.pods,
-              services: integration.config.services,
-              version: integration.config.version
-            }
-          };
-        } else {
-          return {
-            success: false,
-            message: 'Failed to connect to Kubernetes API server: Connection timeout'
-          };
-        }
+    if (!isSuccess) {
+      const errors = [
+        'Connection timeout',
+        'Authentication failed',
+        'Service unavailable',
+        'Network unreachable',
+        'SSL certificate error'
+      ];
+      return {
+        success: false,
+        message: errors[Math.floor(Math.random() * errors.length)]
+      };
+    }
 
-      case 'prometheus':
-        if (isSuccess) {
-          integration.config.targets = ['kubernetes-apiservers', 'kubernetes-nodes', 'kubernetes-pods'];
-          integration.metrics!.uptime = '99.9%';
-          integration.metrics!.requests = Math.floor(Math.random() * 50000) + 20000;
-          integration.metrics!.errors = Math.floor(Math.random() * 20);
-          
-          return {
-            success: true,
-            message: 'Prometheus is healthy and collecting metrics',
-            details: {
-              targets: integration.config.targets.length,
-              scrapeInterval: integration.config.scrapeInterval,
-              retention: integration.config.retentionTime,
-              alertmanager: 'connected'
-            }
-          };
-        } else {
-          return {
-            success: false,
-            message: 'Prometheus server is not responding'
-          };
-        }
+    // Generate integration-specific success responses
+    switch (integration.type) {
+      case 'orchestration': // Kubernetes
+        return {
+          success: true,
+          message: 'Successfully connected to Kubernetes cluster',
+          details: {
+            nodes: integration.config.nodes,
+            version: integration.config.version,
+            namespace: integration.config.namespace,
+            pods: Math.floor(Math.random() * 50) + 20,
+            services: Math.floor(Math.random() * 20) + 10
+          }
+        };
 
-      case 'jenkins':
-        if (isSuccess) {
-          integration.config.jobs = Math.floor(Math.random() * 20) + 5;
-          integration.config.builds = Math.floor(Math.random() * 1000) + 100;
-          integration.metrics!.uptime = '99.8%';
-          integration.metrics!.requests = Math.floor(Math.random() * 5000) + 1000;
-          integration.metrics!.errors = Math.floor(Math.random() * 15);
-          
-          return {
-            success: true,
-            message: 'Jenkins is running and accessible',
-            details: {
-              version: integration.config.version,
-              jobs: integration.config.jobs,
-              builds: integration.config.builds,
-              executors: integration.config.executors
-            }
-          };
-        } else {
-          return {
-            success: false,
-            message: 'Jenkins server authentication failed'
-          };
-        }
+      case 'monitoring': // Prometheus, Grafana
+        return {
+          success: true,
+          message: `Successfully connected to ${integration.name}`,
+          details: {
+            version: integration.config.version,
+            targets: Math.floor(Math.random() * 100) + 50,
+            alerts: Math.floor(Math.random() * 10),
+            uptime: '99.9%'
+          }
+        };
 
-      case 'docker-registry':
-        if (isSuccess) {
-          integration.config.repositories = Math.floor(Math.random() * 50) + 10;
-          integration.config.totalSize = `${(Math.random() * 100 + 10).toFixed(1)} GB`;
-          integration.metrics!.uptime = '99.7%';
-          integration.metrics!.requests = Math.floor(Math.random() * 2000) + 500;
-          integration.metrics!.errors = Math.floor(Math.random() * 5);
-          
-          return {
-            success: true,
-            message: 'Docker Registry is accessible',
-            details: {
-              repositories: integration.config.repositories,
-              totalSize: integration.config.totalSize,
-              version: integration.config.version
-            }
-          };
-        } else {
-          return {
-            success: false,
-            message: 'Docker Registry authentication failed'
-          };
-        }
+      case 'ci_cd': // Jenkins
+        return {
+          success: true,
+          message: 'Successfully connected to Jenkins',
+          details: {
+            version: integration.config.version,
+            jobs: Math.floor(Math.random() * 30) + 10,
+            executors: integration.config.executors,
+            queue: Math.floor(Math.random() * 5)
+          }
+        };
 
-      case 'trivy':
-        if (isSuccess) {
-          integration.metrics!.uptime = '98.7%';
-          integration.metrics!.requests = Math.floor(Math.random() * 1000) + 200;
-          integration.metrics!.errors = Math.floor(Math.random() * 8);
-          
-          return {
-            success: true,
-            message: 'Trivy scanner is operational',
-            details: {
-              version: integration.config.version,
-              dbVersion: integration.config.dbVersion,
-              scanTypes: integration.config.scanTypes
-            }
-          };
-        } else {
-          return {
-            success: false,
-            message: 'Trivy scanner database update required'
-          };
-        }
+      case 'security': // Trivy, SonarQube
+        return {
+          success: true,
+          message: `Successfully connected to ${integration.name}`,
+          details: {
+            version: integration.config.version,
+            lastScan: new Date(Date.now() - Math.random() * 86400000).toISOString(),
+            vulnerabilities: Math.floor(Math.random() * 20),
+            projects: integration.config.projects || 1
+          }
+        };
 
-      case 'sonarqube':
-        if (isSuccess) {
-          integration.config.projects = Math.floor(Math.random() * 15) + 3;
-          integration.config.linesOfCode = Math.floor(Math.random() * 500000) + 50000;
-          integration.metrics!.uptime = '99.2%';
-          integration.metrics!.requests = Math.floor(Math.random() * 3000) + 800;
-          integration.metrics!.errors = Math.floor(Math.random() * 12);
-          
-          return {
-            success: true,
-            message: 'SonarQube is analyzing code quality',
-            details: {
-              projects: integration.config.projects,
-              linesOfCode: integration.config.linesOfCode,
-              qualityGates: integration.config.qualityGates
-            }
-          };
-        } else {
-          return {
-            success: false,
-            message: 'SonarQube database connection failed'
-          };
-        }
+      case 'container': // Docker Registry
+        return {
+          success: true,
+          message: 'Successfully connected to Docker Registry',
+          details: {
+            repositories: Math.floor(Math.random() * 50) + 20,
+            images: Math.floor(Math.random() * 200) + 100,
+            storage: '2.5TB',
+            lastPush: new Date(Date.now() - Math.random() * 3600000).toISOString()
+          }
+        };
 
-      case 'grafana':
-        if (isSuccess) {
-          integration.config.dashboards = Math.floor(Math.random() * 25) + 5;
-          integration.config.datasources = Math.floor(Math.random() * 8) + 2;
-          integration.config.alertRules = Math.floor(Math.random() * 20) + 5;
-          integration.metrics!.uptime = '99.6%';
-          integration.metrics!.requests = Math.floor(Math.random() * 8000) + 2000;
-          integration.metrics!.errors = Math.floor(Math.random() * 10);
-          
-          return {
-            success: true,
-            message: 'Grafana dashboards are accessible',
-            details: {
-              dashboards: integration.config.dashboards,
-              datasources: integration.config.datasources,
-              alertRules: integration.config.alertRules
-            }
-          };
-        } else {
-          return {
-            success: false,
-            message: 'Grafana authentication token expired'
-          };
-        }
-
-      case 'slack':
-        if (isSuccess) {
-          integration.metrics!.uptime = '99.9%';
-          integration.metrics!.requests = Math.floor(Math.random() * 1500) + 300;
-          integration.metrics!.errors = Math.floor(Math.random() * 3);
-          
-          return {
-            success: true,
-            message: 'Slack workspace is connected',
-            details: {
-              workspace: integration.config.workspace,
-              channels: integration.config.channels.length,
-              botName: integration.config.botName
-            }
-          };
-        } else {
-          return {
-            success: false,
-            message: 'Slack API token is invalid'
-          };
-        }
+      case 'communication': // Slack
+        return {
+          success: true,
+          message: 'Successfully connected to Slack workspace',
+          details: {
+            workspace: integration.config.workspace,
+            channels: integration.config.channels.length,
+            members: Math.floor(Math.random() * 50) + 10,
+            lastMessage: new Date(Date.now() - Math.random() * 3600000).toISOString()
+          }
+        };
 
       default:
         return {
-          success: false,
-          message: 'Unknown integration type'
+          success: true,
+          message: `Successfully connected to ${integration.name}`
         };
     }
   }
 
-  async connectIntegration(integrationId: string, config?: Partial<IntegrationConfig>): Promise<void> {
+  async configureIntegration(integrationId: string, config: Partial<IntegrationConfig>): Promise<IntegrationConfig> {
     const integration = this.integrations.get(integrationId);
     if (!integration) {
       throw new Error('Integration not found');
     }
 
+    // Update integration configuration
+    const updatedIntegration = {
+      ...integration,
+      ...config,
+      config: { ...integration.config, ...config.config },
+      credentials: { ...integration.credentials, ...config.credentials }
+    };
+
+    this.integrations.set(integrationId, updatedIntegration);
+    return updatedIntegration;
+  }
+
+  async deployTestEnvironment(integrationId: string): Promise<{ success: boolean; message: string; details: any }> {
+    const integration = this.integrations.get(integrationId);
+    if (!integration) {
+      throw new Error('Integration not found');
+    }
+
+    // Simulate deployment process
     integration.status = 'configuring';
     
-    // Simulate configuration time
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    if (config) {
-      integration.config = { ...integration.config, ...config };
-    }
+    await new Promise(resolve => setTimeout(resolve, 3000)); // Simulate deployment time
 
-    // Test connection after configuration
-    const testResult = await this.testConnection(integrationId);
-    
-    if (testResult.success) {
+    const deploymentSuccess = Math.random() > 0.1; // 90% success rate
+
+    if (deploymentSuccess) {
       integration.status = 'connected';
-      integration.metrics!.lastSync = new Date().toISOString();
+      return {
+        success: true,
+        message: `Test environment for ${integration.name} deployed successfully`,
+        details: {
+          environment: 'test',
+          endpoint: integration.endpoint,
+          status: 'running',
+          resources: {
+            cpu: '2 cores',
+            memory: '4GB',
+            storage: '20GB'
+          },
+          deploymentTime: '3.2s'
+        }
+      };
     } else {
       integration.status = 'error';
-      throw new Error(testResult.message);
+      return {
+        success: false,
+        message: `Failed to deploy test environment for ${integration.name}`,
+        details: {
+          error: 'Insufficient resources',
+          suggestion: 'Try again or contact administrator'
+        }
+      };
     }
   }
 
-  async disconnectIntegration(integrationId: string): Promise<void> {
-    const integration = this.integrations.get(integrationId);
-    if (!integration) {
-      throw new Error('Integration not found');
-    }
-
-    integration.status = 'disconnected';
-    integration.metrics = {
-      uptime: '0%',
-      requests: 0,
-      errors: 0,
-      responseTime: 0
-    };
-  }
-
-  getIntegration(integrationId: string): IntegrationConfig | undefined {
-    return this.integrations.get(integrationId);
+  getIntegration(id: string): IntegrationConfig | undefined {
+    return this.integrations.get(id);
   }
 
   getAllIntegrations(): IntegrationConfig[] {
@@ -605,120 +449,70 @@ class IntegrationService {
     return Array.from(this.integrations.values()).filter(integration => integration.type === type);
   }
 
-  getConnectedIntegrations(): IntegrationConfig[] {
-    return Array.from(this.integrations.values()).filter(integration => integration.status === 'connected');
-  }
-
-  async runHealthChecks(): Promise<Map<string, TestResult>> {
-    const results = new Map<string, TestResult>();
-    const connectedIntegrations = this.getConnectedIntegrations();
-
-    for (const integration of connectedIntegrations) {
-      try {
-        const result = await this.testConnection(integration.id);
-        results.set(integration.id, result);
-      } catch (error) {
-        results.set(integration.id, {
-          success: false,
-          responseTime: 0,
-          status: 'error',
-          message: `Health check failed: ${error}`,
-          timestamp: new Date().toISOString()
-        });
-      }
+  async getIntegrationMetrics(integrationId: string): Promise<any> {
+    const integration = this.integrations.get(integrationId);
+    if (!integration || integration.status !== 'connected') {
+      throw new Error('Integration not found or not connected');
     }
 
-    return results;
-  }
+    // Generate realistic metrics based on integration type
+    switch (integration.type) {
+      case 'orchestration': // Kubernetes
+        return {
+          nodes: {
+            total: integration.config.nodes,
+            ready: integration.config.nodes - Math.floor(Math.random() * 2),
+            cpu: Math.floor(Math.random() * 30) + 40,
+            memory: Math.floor(Math.random() * 20) + 60
+          },
+          pods: {
+            running: Math.floor(Math.random() * 50) + 20,
+            pending: Math.floor(Math.random() * 5),
+            failed: Math.floor(Math.random() * 3)
+          },
+          services: Math.floor(Math.random() * 20) + 10,
+          deployments: Math.floor(Math.random() * 15) + 8
+        };
 
-  async deployToKubernetes(manifest: any): Promise<{ success: boolean; message: string; details?: any }> {
-    const k8s = this.getIntegration('kubernetes');
-    if (!k8s || k8s.status !== 'connected') {
-      throw new Error('Kubernetes cluster not connected');
-    }
+      case 'monitoring': // Prometheus
+        return {
+          targets: {
+            up: Math.floor(Math.random() * 80) + 40,
+            down: Math.floor(Math.random() * 5)
+          },
+          queries: Math.floor(Math.random() * 1000) + 500,
+          alerts: {
+            firing: Math.floor(Math.random() * 5),
+            pending: Math.floor(Math.random() * 3)
+          },
+          storage: '15.2GB'
+        };
 
-    // Simulate deployment
-    await new Promise(resolve => setTimeout(resolve, 2000));
+      case 'ci_cd': // Jenkins
+        return {
+          jobs: {
+            total: Math.floor(Math.random() * 30) + 10,
+            running: Math.floor(Math.random() * 5),
+            queued: Math.floor(Math.random() * 3)
+          },
+          builds: {
+            successful: Math.floor(Math.random() * 100) + 200,
+            failed: Math.floor(Math.random() * 20) + 5,
+            aborted: Math.floor(Math.random() * 10)
+          },
+          executors: {
+            total: integration.config.executors,
+            busy: Math.floor(Math.random() * integration.config.executors)
+          }
+        };
 
-    const success = Math.random() > 0.1; // 90% success rate
-
-    if (success) {
-      return {
-        success: true,
-        message: 'Application deployed successfully to Kubernetes',
-        details: {
-          namespace: manifest.metadata?.namespace || 'default',
-          name: manifest.metadata?.name || 'app',
-          replicas: manifest.spec?.replicas || 1,
-          image: manifest.spec?.template?.spec?.containers?.[0]?.image || 'unknown'
-        }
-      };
-    } else {
-      return {
-        success: false,
-        message: 'Deployment failed: Insufficient resources in cluster'
-      };
-    }
-  }
-
-  async triggerJenkinsBuild(jobName: string, parameters?: Record<string, any>): Promise<{ success: boolean; buildNumber?: number; message: string }> {
-    const jenkins = this.getIntegration('jenkins');
-    if (!jenkins || jenkins.status !== 'connected') {
-      throw new Error('Jenkins not connected');
-    }
-
-    // Simulate build trigger
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    const success = Math.random() > 0.15; // 85% success rate
-    const buildNumber = Math.floor(Math.random() * 1000) + 100;
-
-    if (success) {
-      jenkins.config.builds = (jenkins.config.builds || 0) + 1;
-      return {
-        success: true,
-        buildNumber,
-        message: `Build #${buildNumber} started successfully for job: ${jobName}`
-      };
-    } else {
-      return {
-        success: false,
-        message: `Failed to trigger build for job: ${jobName} - Queue is full`
-      };
-    }
-  }
-
-  async scanWithTrivy(target: string, scanType: 'image' | 'filesystem' | 'repository' = 'image'): Promise<{ success: boolean; vulnerabilities?: any[]; message: string }> {
-    const trivy = this.getIntegration('trivy');
-    if (!trivy || trivy.status !== 'connected') {
-      throw new Error('Trivy scanner not connected');
-    }
-
-    // Simulate scan
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
-    const success = Math.random() > 0.1; // 90% success rate
-
-    if (success) {
-      const vulnerabilities = Array.from({ length: Math.floor(Math.random() * 10) + 1 }, (_, i) => ({
-        id: `VULN-${Date.now()}-${i}`,
-        severity: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'][Math.floor(Math.random() * 4)],
-        title: `Vulnerability ${i + 1} in ${target}`,
-        description: `Security issue found during ${scanType} scan`,
-        package: `package-${i + 1}`,
-        version: `1.${Math.floor(Math.random() * 10)}.${Math.floor(Math.random() * 10)}`
-      }));
-
-      return {
-        success: true,
-        vulnerabilities,
-        message: `Scan completed for ${target}. Found ${vulnerabilities.length} vulnerabilities.`
-      };
-    } else {
-      return {
-        success: false,
-        message: `Scan failed for ${target}: Database not updated`
-      };
+      default:
+        return {
+          status: 'healthy',
+          uptime: integration.metrics?.uptime || '99.9%',
+          requests: integration.metrics?.requests || 0,
+          errors: integration.metrics?.errors || 0
+        };
     }
   }
 }
