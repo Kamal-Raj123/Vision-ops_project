@@ -7,7 +7,8 @@ import {
   MessageSquare, 
   Settings,
   Zap,
-  User
+  User,
+  Server
 } from 'lucide-react';
 import { NavItem } from '../types';
 import { useAuthStore } from '../store/authStore';
@@ -19,6 +20,7 @@ interface SidebarProps {
 
 const navigationItems: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: 'LayoutDashboard', path: '/dashboard' },
+  { id: 'kubernetes', label: 'Kubernetes Nodes', icon: 'Server', path: '/kubernetes' },
   { id: 'pipelines', label: 'CI/CD Pipelines', icon: 'GitBranch', path: '/pipelines' },
   { id: 'security', label: 'Security Scan', icon: 'Shield', path: '/security' },
   { id: 'monitoring', label: 'Monitoring', icon: 'Activity', path: '/monitoring' },
@@ -32,7 +34,8 @@ const iconMap = {
   Shield,
   Activity,
   MessageSquare,
-  Settings
+  Settings,
+  Server
 };
 
 export default function Sidebar({ activeView, onViewChange }: SidebarProps) {

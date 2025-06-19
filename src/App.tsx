@@ -5,6 +5,7 @@ import { useWebSocket } from './hooks/useWebSocket';
 import LoginForm from './components/LoginForm';
 import Dashboard from './components/Dashboard';
 import Sidebar from './components/Sidebar';
+import KubernetesNodes from './components/KubernetesNodes';
 import PipelineBuilder from './components/PipelineBuilder';
 import SecurityScanner from './components/SecurityScanner';
 import Monitoring from './components/Monitoring';
@@ -50,6 +51,8 @@ function App() {
     switch (activeView) {
       case 'dashboard':
         return <Dashboard />;
+      case 'kubernetes':
+        return <KubernetesNodes />;
       case 'pipelines':
         return <PipelineBuilder />;
       case 'security':
