@@ -46,3 +46,88 @@ export interface NavItem {
   icon: string;
   path: string;
 }
+
+export interface KubernetesNode {
+  id: string;
+  name: string;
+  status: 'ready' | 'not-ready' | 'deploying' | 'terminating' | 'error';
+  role: 'control-plane' | 'worker';
+  version: string;
+  os: string;
+  architecture: string;
+  capacity: {
+    cpu: string;
+    memory: string;
+    storage: string;
+    pods: number;
+  };
+  allocatable: {
+    cpu: string;
+    memory: string;
+    storage: string;
+    pods: number;
+  };
+  usage: {
+    cpu: number;
+    memory: number;
+    storage: number;
+    pods: number;
+  };
+  conditions: Array<{
+    type: string;
+    status: 'True' | 'False' | 'Unknown';
+    reason: string;
+    message: string;
+    lastTransition: string;
+  }>;
+  labels: Record<string, string>;
+  annotations: Record<string, string>;
+  createdAt: string;
+  lastHeartbeat: string;
+  nodeInfo: {
+    machineID: string;
+    systemUUID: string;
+    bootID: string;
+    kernelVersion: string;
+    osImage: string;
+    containerRuntimeVersion: string;
+    kubeletVersion: string;
+    kubeProxyVersion: string;
+  };
+  addresses: Array<{
+    type: 'InternalIP' | 'ExternalIP' | 'Hostname';
+    address: string;
+  }>;
+  taints: Array<{
+    key: string;
+    value?: string;
+    effect: 'NoSchedule' | 'PreferNoSchedule' | 'NoExecute';
+  }>;
+  pods: Array<{
+    name: string;
+    namespace: string;
+    status: string;
+    restarts: number;
+    age: string;
+  }>;
+}
+
+export interface NodeDeploymentConfig {
+  nodeType: 'control-plane' | 'worker';
+  instanceType: 'small' | 'medium' | 'large' | 'xlarge';
+  count: number;
+  zone: string;
+  labels: Record<string, string>;
+  taints: Array<{
+    key: string;
+    value?: string;
+    effect: 'NoSchedule' | 'PreferNoSchedule' | 'NoExecute';
+  }>;
+  autoScaling: {
+    enabled: boolean;
+    minNodes: number;
+    maxNodes: number;
+    targetCPU: number;
+    targetMemory: number;
+  };
+}

@@ -46,6 +46,20 @@ interface Vulnerability {
   fixInstructions?: string;
 }
 
+interface Integration {
+  id: string;
+  name: string;
+  type: 'ci_cd' | 'monitoring' | 'security' | 'communication';
+  status: 'connected' | 'disconnected' | 'error' | 'configuring';
+  lastSync?: string;
+  config: Record<string, any>;
+  metrics?: {
+    uptime: string;
+    requests: number;
+    errors: number;
+  };
+}
+
 // Mock data
 const users: User[] = [
   {
@@ -156,6 +170,100 @@ let vulnerabilities: Vulnerability[] = [
   }
 ];
 
+// Enhanced integrations with real functionality simulation
+let integrations: Integration[] = [
+  {
+    id: 'jenkins',
+    name: 'Jenkins CI/CD',
+    type: 'ci_cd',
+    status: 'connected',
+    lastSync: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+    config: {
+      serverUrl: 'https://jenkins.company.com',
+      username: 'admin',
+      apiToken: '***hidden***',
+      webhookUrl: 'https://jenkins.company.com/github-webhook/'
+    },
+    metrics: {
+      uptime: '99.8%',
+      requests: 1247,
+      errors: 3
+    }
+  },
+  {
+    id: 'prometheus',
+    name: 'Prometheus Monitoring',
+    type: 'monitoring',
+    status: 'connected',
+    lastSync: new Date(Date.now() - 1 * 60 * 1000).toISOString(),
+    config: {
+      serverUrl: 'http://prometheus:9090',
+      scrapeInterval: '30s',
+      retentionTime: '15d',
+      alertmanagerUrl: 'http://alertmanager:9093'
+    },
+    metrics: {
+      uptime: '99.9%',
+      requests: 45678,
+      errors: 12
+    }
+  },
+  {
+    id: 'kubernetes',
+    name: 'Kubernetes Cluster',
+    type: 'monitoring',
+    status: 'connected',
+    lastSync: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+    config: {
+      clusterEndpoint: 'https://k8s-api.company.com',
+      namespace: 'default',
+      serviceAccount: 'secureops-sa',
+      kubeconfig: '***hidden***'
+    },
+    metrics: {
+      uptime: '99.5%',
+      requests: 8934,
+      errors: 45
+    }
+  },
+  {
+    id: 'trivy',
+    name: 'Trivy Security Scanner',
+    type: 'security',
+    status: 'connected',
+    lastSync: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+    config: {
+      scannerVersion: 'v0.45.1',
+      dbVersion: '2023-11-15',
+      scanTypes: ['vuln', 'secret', 'config'],
+      severity: ['CRITICAL', 'HIGH', 'MEDIUM']
+    },
+    metrics: {
+      uptime: '98.7%',
+      requests: 234,
+      errors: 8
+    }
+  },
+  {
+    id: 'github',
+    name: 'GitHub Integration',
+    type: 'ci_cd',
+    status: 'connected',
+    lastSync: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+    config: {
+      apiUrl: 'https://api.github.com',
+      organization: 'secureops',
+      webhookSecret: '***hidden***',
+      accessToken: '***hidden***'
+    },
+    metrics: {
+      uptime: '99.9%',
+      requests: 567,
+      errors: 2
+    }
+  }
+];
+
 // Utility function to simulate API delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -251,7 +359,9 @@ export class MockBackendService {
     pipeline.status = 'running';
     pipeline.lastRun = new Date().toISOString();
     pipeline.logs = [
-      { timestamp: new Date().toISOString(), level: 'info', message: 'Pipeline execution started...' }
+      { timestamp: new Date().toISOString(), level: 'info', message: 'Pipeline execution started...' },
+      { timestamp: new Date().toISOString(), level: 'info', message: 'Connecting to Jenkins...' },
+      { timestamp: new Date().toISOString(), level: 'info', message: 'Triggering build job...' }
     ];
 
     // Simulate pipeline completion after 5 seconds
@@ -320,6 +430,48 @@ export class MockBackendService {
     return { data: vulnerability };
   }
 
+  static async startSecurityScan(scanData: { type: string; target: string; scanner: string }) {
+    await delay(500);
+    
+    const scan = {
+      id: Date.now().toString(),
+      type: scanData.type,
+      target: scanData.target,
+      scanner: scanData.scanner,
+      status: 'running',
+      startedAt: new Date().toISOString(),
+      progress: 0
+    };
+
+    // Simulate scan progress
+    const progressInterval = setInterval(() => {
+      scan.progress += Math.random() * 20;
+      if (scan.progress >= 100) {
+        scan.progress = 100;
+        scan.status = 'completed';
+        clearInterval(progressInterval);
+        
+        // Add some new vulnerabilities
+        const newVuln: Vulnerability = {
+          id: Date.now().toString(),
+          severity: ['critical', 'high', 'medium'][Math.floor(Math.random() * 3)] as any,
+          title: `New vulnerability found in ${scanData.target}`,
+          description: `Security scan detected a vulnerability requiring attention.`,
+          package: scanData.target,
+          version: '1.0.0',
+          scanner: scanData.scanner as any,
+          discoveredAt: new Date().toISOString(),
+          status: 'open',
+          assignee: null,
+          fixInstructions: 'Review and update the affected component.'
+        };
+        vulnerabilities.push(newVuln);
+      }
+    }, 1000);
+
+    return { data: scan };
+  }
+
   // Monitoring API
   static async getMetrics() {
     await delay(300);
@@ -336,6 +488,16 @@ export class MockBackendService {
         throughput: { value: 1234 + Math.random() * 200 - 100, status: 'healthy', history: [] },
         errorRate: { value: 0.12 + Math.random() * 0.1 - 0.05, status: 'healthy', history: [] },
         activeUsers: { value: 156 + Math.random() * 20 - 10, status: 'healthy', history: [] }
+      },
+      kubernetes: {
+        nodes: [
+          { name: 'master-1', status: 'healthy', cpu: 23, memory: 67, role: 'control-plane' },
+          { name: 'worker-1', status: 'healthy', cpu: 45, memory: 72, role: 'worker' },
+          { name: 'worker-2', status: 'warning', cpu: 89, memory: 94, role: 'worker' },
+          { name: 'worker-3', status: 'healthy', cpu: 34, memory: 58, role: 'worker' }
+        ],
+        pods: { running: 24, pending: 2, failed: 1, succeeded: 156 },
+        services: { active: 12, inactive: 0 }
       }
     };
 
@@ -370,6 +532,49 @@ export class MockBackendService {
     return { data: { alerts } };
   }
 
+  // Integrations API
+  static async getIntegrations() {
+    await delay(300);
+    return { data: { integrations } };
+  }
+
+  static async testIntegration(integrationId: string) {
+    await delay(1000); // Simulate connection test
+    
+    const integration = integrations.find(i => i.id === integrationId);
+    if (!integration) {
+      throw new Error('Integration not found');
+    }
+
+    const success = Math.random() > 0.2; // 80% success rate
+    
+    return {
+      data: {
+        integration: integrationId,
+        status: success ? 'success' : 'failed',
+        timestamp: new Date().toISOString(),
+        responseTime: Math.floor(Math.random() * 1000) + 100,
+        details: success 
+          ? `Successfully connected to ${integration.name}` 
+          : `Failed to connect to ${integration.name}: Connection timeout`
+      }
+    };
+  }
+
+  static async updateIntegrationStatus(integrationId: string, status: string) {
+    await delay(300);
+    
+    const integration = integrations.find(i => i.id === integrationId);
+    if (!integration) {
+      throw new Error('Integration not found');
+    }
+
+    integration.status = status as any;
+    integration.lastSync = new Date().toISOString();
+
+    return { data: integration };
+  }
+
   // AI API
   static async chat(message: string, conversationId?: string) {
     await delay(1500); // Simulate AI thinking time
@@ -395,9 +600,14 @@ export class MockBackendService {
     if (lowerInput.includes('security') || lowerInput.includes('vulnerability')) {
       return `Based on your recent security scan results, I've identified several key areas for improvement:
 
-**Critical Issues (2):**
+**Critical Issues (${vulnerabilities.filter(v => v.severity === 'critical').length}):**
 - SQL Injection vulnerability in user authentication - Fix by updating express-validator to v6.14.2
 - Outdated cryptographic library - Upgrade crypto-js to v4.1.1
+
+**Integration Status:**
+- Trivy Scanner: ✅ Connected (Last scan: 10 minutes ago)
+- OWASP ZAP: ⚠️ Needs configuration
+- Bandit: ✅ Active
 
 **Recommendations:**
 1. Implement input validation middleware across all API endpoints
@@ -420,6 +630,11 @@ Would you like me to generate specific code examples for any of these fixes?`;
 - Memory usage at 45% (healthy)
 - API response time: 245ms (acceptable but improvable)
 
+**Kubernetes Cluster Health:**
+- 4 nodes active (1 control-plane, 3 workers)
+- worker-2 showing high resource usage (89% CPU, 94% Memory)
+- 24 pods running, 2 pending
+
 **Performance Bottlenecks:**
 1. High CPU usage on worker-2 node (89%)
 2. Database query times averaging 23ms
@@ -437,6 +652,128 @@ Would you like me to generate specific code examples for any of these fixes?`;
 
 Would you like detailed implementation steps for any of these optimizations?`;
     }
+
+    if (lowerInput.includes('jenkins') || lowerInput.includes('pipeline')) {
+      return `I've reviewed your CI/CD pipeline configuration and Jenkins integration:
+
+**Jenkins Status:**
+- ✅ Connected and healthy (99.8% uptime)
+- 1,247 requests processed, 3 errors
+- Last sync: 5 minutes ago
+
+**Current Pipeline Analysis:**
+- Average build time: 3m 24s
+- Success rate: 87% (good but improvable)
+- Most common failure: Test timeouts (34%)
+
+**Optimization Recommendations:**
+
+1. **Parallel Execution:**
+   - Run tests and security scans in parallel
+   - Estimated time savings: 4-6 minutes
+
+2. **Caching Strategy:**
+   - Implement Docker layer caching
+   - Cache npm/pip dependencies
+   - Expected improvement: 40% faster builds
+
+3. **Jenkins Configuration:**
+   - Increase executor pool size
+   - Configure build agents with more resources
+   - Set up pipeline libraries for reusable components
+
+**Implementation Priority:**
+1. Enable dependency caching (Quick win)
+2. Parallelize pipeline stages
+3. Optimize test execution
+
+Would you like me to generate the updated Jenkinsfile configuration?`;
+    }
+
+    if (lowerInput.includes('kubernetes') || lowerInput.includes('k8s')) {
+      return `Here's an analysis of your Kubernetes cluster health:
+
+**Cluster Overview:**
+- ✅ Connected and monitored
+- 4 nodes active (1 control-plane, 3 workers)
+- 24 pods running, 2 pending, 1 failed
+- 12 services active
+
+**Node Status:**
+- **master-1**: ✅ Healthy (CPU: 23%, Memory: 67%)
+- **worker-1**: ✅ Healthy (CPU: 45%, Memory: 72%)
+- **worker-2**: ⚠️ High resource usage (CPU: 89%, Memory: 94%)
+- **worker-3**: ✅ Healthy (CPU: 34%, Memory: 58%)
+
+**Recommendations:**
+1. **Immediate Action:** Investigate worker-2 resource usage
+   - Check for resource-intensive pods
+   - Consider pod redistribution or node scaling
+
+2. **Resource Management:**
+   - Implement resource requests and limits
+   - Set up Horizontal Pod Autoscaler (HPA)
+   - Configure cluster autoscaling
+
+3. **Monitoring Improvements:**
+   - Set up alerts for node resource thresholds
+   - Implement pod disruption budgets
+   - Monitor cluster events and logs
+
+**Quick Commands:**
+\`\`\`bash
+kubectl top nodes
+kubectl describe node worker-2
+kubectl get pods --all-namespaces -o wide
+\`\`\`
+
+Would you like me to help you investigate the worker-2 issues or set up autoscaling?`;
+    }
+
+    if (lowerInput.includes('prometheus') || lowerInput.includes('monitoring')) {
+      return `Here's your Prometheus monitoring status and recommendations:
+
+**Prometheus Status:**
+- ✅ Connected and active (99.9% uptime)
+- 45,678 requests processed, 12 errors
+- Scrape interval: 30s, Retention: 15d
+
+**Current Metrics Collection:**
+- System metrics: CPU, Memory, Disk, Network
+- Application metrics: Response time, Throughput, Error rate
+- Kubernetes metrics: Node status, Pod health, Resource usage
+
+**Alert Rules Active:**
+- High CPU usage (>80% for 5 minutes)
+- Memory usage (>90% for 10 minutes)
+- Disk space (>85%)
+- Pod restart rate (>5 restarts/hour)
+
+**Recommendations:**
+1. **Alerting Improvements:**
+   - Add custom business metrics
+   - Configure Slack/email notifications
+   - Set up escalation policies
+
+2. **Dashboard Enhancements:**
+   - Create service-specific dashboards
+   - Add SLA/SLO tracking
+   - Implement capacity planning views
+
+3. **Performance Optimization:**
+   - Optimize query performance
+   - Configure recording rules
+   - Set up federation for multi-cluster
+
+**Sample PromQL Queries:**
+\`\`\`promql
+rate(http_requests_total[5m])
+node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes
+kube_pod_container_status_restarts_total
+\`\`\`
+
+Would you like me to help you set up specific alerts or dashboards?`;
+    }
     
     return `I understand you'd like help with: "${userInput}"
 
@@ -446,7 +783,15 @@ I can assist you with various DevSecOps tasks including:
 • **Performance Monitoring** - System optimization and bottleneck identification  
 • **Log Analysis** - Error pattern detection and root cause analysis
 • **Pipeline Optimization** - CI/CD improvement recommendations
-• **Infrastructure Insights** - Resource usage and scaling recommendations
+• **Infrastructure Insights** - Kubernetes and resource management guidance
+• **Integration Management** - Jenkins, Prometheus, and security tool configuration
+
+**Current Integration Status:**
+- Jenkins: ✅ Connected (99.8% uptime)
+- Prometheus: ✅ Active (99.9% uptime)
+- Kubernetes: ✅ Monitored (4 nodes)
+- Trivy Scanner: ✅ Running
+- GitHub: ✅ Integrated
 
 Could you please provide more specific details about what you'd like me to analyze or help you with?`;
   }
