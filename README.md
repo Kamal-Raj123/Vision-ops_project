@@ -7,6 +7,7 @@
   <img src="https://img.shields.io/badge/Express-4.18.2-black?style=for-the-badge&logo=express" alt="Express" />
   <img src="https://img.shields.io/badge/Socket.io-4.7.4-white?style=for-the-badge&logo=socket.io" alt="Socket.io" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-3.4.1-38B2AC?style=for-the-badge&logo=tailwind-css" alt="Tailwind CSS" />
+  <img src="https://img.shields.io/badge/Supabase-Database-3ECF8E?style=for-the-badge&logo=supabase" alt="Supabase" />
 </div>
 
 <div align="center">
@@ -68,6 +69,16 @@
 │ • Monitoring    │    │ • Real-time     │    │ • Kubernetes    │
 │ • AI Assistant  │    │ • Logging       │    │ • Prometheus    │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
+          │                     │                      │
+          │                     ▼                      │
+          │            ┌─────────────────┐             │
+          └───────────►│   Supabase      │◄────────────┘
+                       │   Database      │
+                       │                 │
+                       │ • Auth          │
+                       │ • Storage       │
+                       │ • Real-time     │
+                       └─────────────────┘
 ```
 
 ---
@@ -79,6 +90,7 @@
 - **Node.js** 18.x or higher
 - **npm** 8.x or higher
 - **Git** for version control
+- **Supabase** account for database and authentication
 
 ### Installation
 
@@ -99,7 +111,12 @@
    # Edit .env file with your configuration
    ```
 
-4. **Start the development servers**
+4. **Connect to Supabase**
+   - Click the "Connect to Supabase" button in the top right corner
+   - Follow the prompts to set up your Supabase project
+   - The necessary tables and schema will be created automatically
+
+5. **Start the development servers**
    ```bash
    # Start both frontend and backend
    npm run dev:full
@@ -109,7 +126,7 @@
    npm run server   # Backend only
    ```
 
-5. **Access the application**
+6. **Access the application**
    - Frontend: `https://localhost:5173`
    - Backend API: `http://localhost:3001`
    - Health Check: `http://localhost:3001/health`
@@ -147,15 +164,11 @@ visionops-devsecops-platform/
 │   └── utils/                    # Utility functions
 ├── server/                       # Backend source code
 │   ├── routes/                   # API route handlers
-│   │   ├── auth.js              # Authentication endpoints
-│   │   ├── pipelines.js         # Pipeline management
-│   │   ├── security.js          # Security scanning
-│   │   ├── monitoring.js        # System monitoring
-│   │   ├── ai.js                # AI assistant
-│   │   └── settings.js          # Configuration
 │   ├── middleware/               # Express middleware
 │   ├── services/                 # Business logic services
 │   └── utils/                    # Backend utilities
+├── supabase/                     # Supabase configuration
+│   └── migrations/               # Database migrations
 ├── .github/                      # GitHub workflows
 └── docs/                         # Documentation
 ```
@@ -175,6 +188,25 @@ visionops-devsecops-platform/
 | `VITE_WS_URL` | WebSocket URL | `http://localhost:3001` |
 | `JWT_SECRET` | JWT signing secret | `your-super-secret-jwt-key` |
 | `LOG_LEVEL` | Logging level | `info` |
+| `SUPABASE_URL` | Supabase project URL | From Supabase setup |
+| `SUPABASE_ANON_KEY` | Supabase anonymous key | From Supabase setup |
+
+### Database Schema
+
+The platform uses Supabase for data storage with the following main tables:
+
+- **profiles**: User profiles and permissions
+- **teams**: Team management and settings
+- **team_members**: Team membership and roles
+- **security_scanners**: Security scanning tools configuration
+- **security_scans**: Security scan execution records
+- **vulnerabilities**: Detected security vulnerabilities
+- **pipelines**: CI/CD pipeline definitions
+- **pipeline_runs**: Pipeline execution history
+- **infrastructure_nodes**: Infrastructure components (K8s, VMs, etc.)
+- **monitoring_metrics**: System and application metrics
+- **monitoring_alerts**: Alert definitions and rules
+- **integrations**: External service integrations
 
 ### Integration Setup
 
@@ -211,12 +243,6 @@ npm run preview      # Preview production build
 
 # Code Quality
 npm run lint         # Run ESLint
-npm run type-check   # Run TypeScript compiler check
-
-# Testing
-npm test             # Run test suite
-npm run test:watch   # Run tests in watch mode
-npm run test:coverage # Generate coverage report
 ```
 
 ### Code Style
@@ -424,6 +450,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Node.js Community** for the robust backend platform
 - **Tailwind CSS** for the utility-first CSS framework
 - **Socket.io** for real-time communication
+- **Supabase** for the powerful database and authentication platform
 - **All Contributors** who have helped shape this project
 
 ---
